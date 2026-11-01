@@ -32,8 +32,23 @@ App batati hai ke script aur transcript kahan match nahi karte:
 | Peeche jaate timestamps | ⚠ warning |
 | Khaali beat text / duplicate keys | ⚠ warning |
 
+## File structure
+```
+index.html                 Page layout (HTML only)
+css/styles.css             Custom styles (Tailwind CDN se baqi styling)
+js/sample-data.js          Crumbl sample script + word-by-word transcript
+js/ui.js                   Buttons, tabs, toasts, app state, file open / drag & drop
+js/transcript-parser.js    Transcript reading: JSON, schema detection, timestamps, SRT/VTT
+js/script-parser.js        Script reading: sections, table / inline / heading beats
+js/aligner.js              Word ↔ beat alignment (dynamic programming) + mismatch detection
+js/render.js               Output text, Alignment Check, Issues tab, telemetry
+js/presets.js              Test Presets menu scenarios
+js/main.js                 Copy / download + app start
+```
+`index.html` mein scripts isi order mein load hoti hain. Order na badlein, kyunke baad wali files pehle wali files ke functions use karti hain.
+
 ## Usage
-Koi install nahi chahiye. `index.html` browser mein khol dein. Files drag & drop bhi ho sakti hain. Aapke inputs browser mein save rehte hain (refresh par wapas aa jate hain).
+Koi install nahi chahiye. Poora folder download karein aur `index.html` browser mein khol dein. `css/` aur `js/` folders saath hone chahiyein. Files drag & drop bhi ho sakti hain. Aapke inputs browser mein save rehte hain (refresh par wapas aa jate hain).
 
 Sample cases: **Test Presets** menu (preset 5 "Messy Real Recording" mein saare common masle dikhaye gaye hain).
 
