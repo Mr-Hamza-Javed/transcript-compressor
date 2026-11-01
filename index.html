@@ -11,12 +11,13 @@
     ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); }
     ::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.5); border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.8); }
+    .beat-flash { box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.9); transition: box-shadow 0.3s; }
     .code-font {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 h-full flex flex-col font-sans overflow-hidden select-none">
+<body class="bg-slate-950 text-slate-100 h-full flex flex-col font-sans overflow-hidden">
 
   <!-- Top Header -->
   <header class="bg-slate-900/95 border-b border-slate-800 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0 z-20">
@@ -42,7 +43,7 @@
           <span>Test Presets (Schema Variants)</span>
           <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i>
         </button>
-        <div id="presetDropdown" class="hidden absolute right-0 mt-1 w-64 rounded-xl bg-slate-800 border border-slate-700 shadow-2xl py-1.5 z-50 text-xs">
+        <div id="presetDropdown" class="hidden absolute right-0 mt-1 w-72 max-h-[75vh] overflow-y-auto rounded-xl bg-slate-800 border border-slate-700 shadow-2xl py-1.5 z-50 text-xs">
           <div class="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Load Sample Scenarios</div>
           <button onclick="loadScenario('crumbl_standard')" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2">
             <i class="fa-solid fa-cookie-bite text-pink-400 w-4"></i>
@@ -59,18 +60,59 @@
             </div>
           </button>
           <button onclick="loadScenario('combined_single_var')" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2">
-            <i class="fa-solid fa-compress-arrows-alt text-cyan-400 w-4"></i>
+            <i class="fa-solid fa-compress text-cyan-400 w-4"></i>
             <div>
               <div class="font-medium">3. Combined Single-Variable JSON</div>
               <div class="text-[10px] text-slate-400">e.g. {"entry": "There | 0.000 - 0.297"}</div>
             </div>
           </button>
           <button onclick="loadScenario('tuple_array')" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2">
-            <i class="fa-solid fa-brackets-square text-purple-400 w-4"></i>
+            <i class="fa-solid fa-list-ol text-purple-400 w-4"></i>
             <div>
               <div class="font-medium">4. Array of Tuples Format</div>
               <div class="text-[10px] text-slate-400">e.g. [["There", 0, 0.297], ...]</div>
             </div>
+          </button>
+          <div class="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 border-t border-slate-700 mt-1">Real-World Tools & Problems</div>
+          <button onclick="loadScenario('messy_take')" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-rose-400 w-4"></i>
+            <div>
+              <div class="font-medium">5. Messy Real Recording</div>
+              <div class="text-[10px] text-slate-400">Intro ad-lib, skipped beat, retake, missing times</div>
+            </div>
+          </button>
+          <button onclick="loadScenario('assemblyai_ms')" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2">
+            <i class="fa-solid fa-stopwatch text-amber-400 w-4"></i>
+            <div>
+              <div class="font-medium">6. AssemblyAI (milliseconds)</div>
+              <div class="text-[10px] text-slate-400">Keys: text, start, end in ms</div>
+            </div>
+          </button>
+          <button onclick="loadScenario('whisper_segments')" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2">
+            <i class="fa-solid fa-microphone-lines text-emerald-400 w-4"></i>
+            <div>
+              <div class="font-medium">7. Whisper segments[].words[]</div>
+              <div class="text-[10px] text-slate-400">Words nested inside segments</div>
+            </div>
+          </button>
+          <button onclick="loadScenario('deepgram')" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2">
+            <i class="fa-solid fa-wave-square text-sky-400 w-4"></i>
+            <div>
+              <div class="font-medium">8. Deepgram (deeply nested)</div>
+              <div class="text-[10px] text-slate-400">results.channels[0].alternatives[0].words</div>
+            </div>
+          </button>
+          <button onclick="loadScenario('srt_subtitles')" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2">
+            <i class="fa-solid fa-closed-captioning text-pink-400 w-4"></i>
+            <div>
+              <div class="font-medium">9. SRT Subtitles (sentence-level)</div>
+              <div class="text-[10px] text-slate-400">Word times estimated from each cue</div>
+            </div>
+          </button>
+          <div class="border-t border-slate-700 mt-1"></div>
+          <button onclick="clearInputs()" class="w-full text-left px-3 py-2 text-slate-300 hover:bg-slate-700 flex items-center gap-2">
+            <i class="fa-solid fa-eraser text-slate-400 w-4"></i>
+            <div class="font-medium">Clear both inputs</div>
           </button>
         </div>
       </div>
@@ -100,19 +142,24 @@
   <!-- Schema Warning Banner (Appears automatically if unknown keys detected) -->
   <div id="schemaAlertBanner" class="hidden bg-amber-500/10 border-b border-amber-500/30 px-4 py-2 flex items-center justify-between text-xs text-amber-200 shrink-0">
     <div class="flex items-center gap-2">
-      <i class="fa-solid fa-triangle-exclamation text-amber-400"></i>
+      <i id="schemaAlertIcon" class="fa-solid fa-triangle-exclamation text-amber-400"></i>
       <span id="schemaAlertText">Different variable structure detected in Transcript! Please verify or map the fields below.</span>
     </div>
-    <button onclick="toggleTranscriptConfig(true)" class="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-semibold border border-amber-500/40 transition">
-      Open Field Mapper
-    </button>
+    <div class="flex items-center gap-2 shrink-0">
+      <button id="bannerIssuesBtn" onclick="switchOutputTab('issues')" class="hidden px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 font-semibold border border-rose-500/40 transition">
+        See Issues
+      </button>
+      <button id="bannerMapperBtn" onclick="toggleTranscriptConfig(true)" class="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-semibold border border-amber-500/40 transition">
+        Open Field Mapper
+      </button>
+    </div>
   </div>
 
   <!-- Main 3-Column Workspace -->
-  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-y-auto lg:overflow-hidden">
 
     <!-- COLUMN 1: SCRIPT INPUT & PARSER MAPPER (4 Cols) -->
-    <section class="lg:col-span-4 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-900/30 overflow-hidden">
+    <section class="lg:col-span-4 flex flex-col min-h-[75vh] lg:min-h-0 border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-900/30 overflow-hidden">
       <!-- Panel Bar -->
       <div class="px-3.5 py-2 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-2">
@@ -121,6 +168,10 @@
         </div>
         <div class="flex items-center gap-2">
           <span id="scriptStatsBadge" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono">0 Sec · 0 Beats</span>
+          <button onclick="openFilePicker('script')" title="Open a script file (.md / .txt) — you can also drag & drop it onto the box" class="px-2 py-1 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+            <i class="fa-regular fa-folder-open text-pink-400"></i>
+          </button>
+          <input id="scriptFileInput" type="file" accept=".md,.markdown,.txt,text/plain,text/markdown" class="hidden" onchange="handleFileChosen('script', this.files[0]); this.value='';">
           <button onclick="toggleScriptConfig()" id="scriptConfigBtn" title="Configure Script Table Columns & Patterns" class="px-2 py-1 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1 transition">
             <i class="fa-solid fa-sliders text-pink-400"></i>
             <span>Map Script</span>
@@ -140,7 +191,7 @@
             <select id="scriptParseMode" onchange="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-pink-500">
               <option value="auto">Auto (Markdown Table + Freeform)</option>
               <option value="table">Markdown Table Rows (| col | col |)</option>
-              <option value="inline">Inline Beat Key (e.g. «1» Text...)</option>
+              <option value="inline">Inline / Heading Beat Key («1» Text... or ### «1»)</option>
             </select>
           </div>
           <div>
@@ -161,9 +212,9 @@
           <div>
             <label class="block text-[10px] text-slate-400 mb-1">Script Text Col #</label>
             <select id="scriptTextCol" onchange="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
-              <option value="auto">Auto (Next to Key)</option>
+              <option value="auto" selected>Auto (Header / Next to Key)</option>
               <option value="0">Column 1</option>
-              <option value="1" selected>Column 2</option>
+              <option value="1">Column 2</option>
               <option value="2">Column 3</option>
               <option value="3">Column 4</option>
             </select>
@@ -189,7 +240,7 @@
     </section>
 
     <!-- COLUMN 2: WORD-BY-WORD TRANSCRIPT & DYNAMIC FIELD MAPPER (4 Cols) -->
-    <section class="lg:col-span-4 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-900/30 overflow-hidden">
+    <section class="lg:col-span-4 flex flex-col min-h-[75vh] lg:min-h-0 border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-900/30 overflow-hidden">
       <!-- Panel Bar -->
       <div class="px-3.5 py-2 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-2">
@@ -198,6 +249,10 @@
         </div>
         <div class="flex items-center gap-2">
           <span id="transcriptStatsBadge" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono">0 Words</span>
+          <button onclick="openFilePicker('transcript')" title="Open a transcript file (.json / .srt / .vtt / .txt) — you can also drag & drop it onto the box" class="px-2 py-1 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+            <i class="fa-regular fa-folder-open text-cyan-400"></i>
+          </button>
+          <input id="transcriptFileInput" type="file" accept=".json,.jsonl,.txt,.srt,.vtt,.csv,.tsv,application/json,text/plain" class="hidden" onchange="handleFileChosen('transcript', this.files[0]); this.value='';">
           <button onclick="toggleTranscriptConfig()" id="transcriptConfigBtn" class="px-2 py-1 text-[11px] rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 flex items-center gap-1 transition">
             <i class="fa-solid fa-diagram-project"></i>
             <span>Schema Mapper</span>
@@ -266,8 +321,8 @@
               </select>
             </div>
             <div>
-              <label class="block text-[10px] text-slate-400 mb-1">Split Regex / Delimiters</label>
-              <input id="combinedDelimiterInput" type="text" value="[\|\s\-–,]+" oninput="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono" title="Regex used to split single variable into parts">
+              <label class="block text-[10px] text-slate-400 mb-1">Split Regex (auto = smart)</label>
+              <input id="combinedDelimiterInput" type="text" value="auto" oninput="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono" title="auto = smart split (finds the two timestamps, the rest is the word — safe for 1,000th or month-to-month). Or type your own split regex and set the part indexes below.">
             </div>
           </div>
           <div class="grid grid-cols-3 gap-2">
@@ -306,9 +361,10 @@
         <div class="flex items-center justify-between pt-1 border-t border-slate-800/80 text-[11px]">
           <span class="text-slate-400">Timestamp Precision:</span>
           <select id="timeFormatPolicy" onchange="runConversion()" class="bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-[11px] text-slate-200">
-            <option value="exact3" selected>Seconds with Exact JSON Decimals (0.297)</option>
-            <option value="raw">Keep Original String Unchanged (00:00:00.297)</option>
+            <option value="auto" selected>Auto (seconds, detects milliseconds) ➔ 0.297</option>
+            <option value="sec">Input is Seconds / HH:MM:SS ➔ 0.297</option>
             <option value="ms_to_sec">Input is Milliseconds (297 ➔ 0.297)</option>
+            <option value="raw">Keep Original String Unchanged (00:00:00.297)</option>
           </select>
         </div>
       </div>
@@ -323,7 +379,7 @@
     </section>
 
     <!-- COLUMN 3: RECOMMENDED STRUCTURE OUTPUT & ALIGNMENT INSPECTOR (4 Cols) -->
-    <section class="lg:col-span-4 flex flex-col bg-slate-950 overflow-hidden">
+    <section class="lg:col-span-4 flex flex-col min-h-[75vh] lg:min-h-0 bg-slate-950 overflow-hidden">
       <!-- Panel Bar -->
       <div class="px-3.5 py-2 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-2">
@@ -338,6 +394,9 @@
           </button>
           <button id="tabInspectorBtn" onclick="switchOutputTab('inspector')" class="px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition">
             Alignment Check
+          </button>
+          <button id="tabIssuesBtn" onclick="switchOutputTab('issues')" class="px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition">
+            Issues <span id="issuesCountBadge" class="ml-0.5 px-1.5 rounded-full bg-slate-700 text-slate-200 text-[10px]">0</span>
           </button>
         </div>
       </div>
@@ -357,9 +416,9 @@
             <input id="hideEmptyBeatsToggle" type="checkbox" checked onchange="runConversion(false)" class="rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0">
             <span>Hide empty beats</span>
           </label>
-          <label class="flex items-center gap-1.5 text-slate-400 cursor-pointer">
+          <label class="flex items-center gap-1.5 text-slate-400 cursor-pointer" title="Keep spoken words that are not part of the script (e.g. intro/outro chatter) under «UNMATCHED_LEADING» / «UNMATCHED_TRAILING»">
             <input id="includeUnmatchedToggle" type="checkbox" checked onchange="runConversion(false)" class="rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0">
-            <span>Trailing words</span>
+            <span>Unmatched words</span>
           </label>
         </div>
       </div>
@@ -376,6 +435,9 @@
         <!-- Populated dynamically with beat-by-beat alignment diagnostics -->
       </div>
 
+      <!-- Issues / Diagnostics View (Hidden by default) -->
+      <div id="outputIssuesContainer" class="hidden flex-1 overflow-y-auto p-3 space-y-2 bg-slate-950"></div>
+
       <!-- Bottom Compression & Alignment Telemetry Bar -->
       <div class="px-3.5 py-2.5 bg-slate-900 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[11px] shrink-0">
         <div class="flex items-center gap-3">
@@ -386,7 +448,7 @@
             0 ➔ 0 est. tokens
           </span>
         </div>
-        <div id="alignmentHealthBadge" class="text-[11px] text-slate-300 flex items-center gap-1.5">
+        <div id="alignmentHealthBadge" onclick="switchOutputTab('issues')" title="Click to see what does not match" class="text-[11px] text-slate-300 flex items-center gap-1.5 cursor-pointer hover:text-white">
           <i class="fa-solid fa-check-double text-emerald-400"></i>
           <span>Aligned</span>
         </div>
@@ -580,8 +642,10 @@ LAST KEY: «10»
     /* =========================================================================
        UI HELPERS & DROPDOWNS
        ========================================================================= */
-    const presetBtn = document.getElementById('presetBtn');
-    const presetDropdown = document.getElementById('presetDropdown');
+    const $ = (id) => document.getElementById(id);
+
+    const presetBtn = $('presetBtn');
+    const presetDropdown = $('presetDropdown');
     presetBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       presetDropdown.classList.toggle('hidden');
@@ -590,403 +654,1024 @@ LAST KEY: «10»
       if (!presetDropdown.classList.contains('hidden')) presetDropdown.classList.add('hidden');
     });
 
+    let toastTimer = null;
     function showToast(msg, type = 'success') {
-      const toast = document.getElementById('toast');
-      const icon = document.getElementById('toastIcon');
-      document.getElementById('toastMsg').textContent = msg;
+      const toast = $('toast');
+      const icon = $('toastIcon');
+      $('toastMsg').textContent = msg;
       icon.className = type === 'error'
         ? 'fa-solid fa-circle-xmark text-rose-400'
         : type === 'warn'
         ? 'fa-solid fa-triangle-exclamation text-amber-400'
         : 'fa-solid fa-circle-check text-emerald-400';
       toast.classList.remove('opacity-0', 'translate-y-[-20px]', 'pointer-events-none');
-      setTimeout(() => {
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
         toast.classList.add('opacity-0', 'translate-y-[-20px]', 'pointer-events-none');
       }, 2600);
     }
 
     function toggleScriptConfig() {
-      document.getElementById('scriptConfigDrawer').classList.toggle('hidden');
+      $('scriptConfigDrawer').classList.toggle('hidden');
     }
 
     function toggleTranscriptConfig(forceOpen = false) {
-      const drawer = document.getElementById('transcriptConfigDrawer');
+      const drawer = $('transcriptConfigDrawer');
       if (forceOpen) drawer.classList.remove('hidden');
       else drawer.classList.toggle('hidden');
     }
 
-    function switchOutputTab(tab) {
-      const textCont = document.getElementById('outputTextContainer');
-      const inspCont = document.getElementById('outputInspectorContainer');
-      const btnText = document.getElementById('tabOutputBtn');
-      const btnInsp = document.getElementById('tabInspectorBtn');
+    const TAB_ACTIVE = 'px-2.5 py-1 rounded-md bg-emerald-600 text-white font-medium transition';
+    const TAB_IDLE = 'px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition';
+    const OUTPUT_TABS = {
+      text: ['tabOutputBtn', 'outputTextContainer'],
+      inspector: ['tabInspectorBtn', 'outputInspectorContainer'],
+      issues: ['tabIssuesBtn', 'outputIssuesContainer']
+    };
 
-      if (tab === 'text') {
-        textCont.classList.remove('hidden');
-        inspCont.classList.add('hidden');
-        btnText.className = 'px-2.5 py-1 rounded-md bg-emerald-600 text-white font-medium transition';
-        btnInsp.className = 'px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition';
-      } else {
-        textCont.classList.add('hidden');
-        inspCont.classList.remove('hidden');
-        btnInsp.className = 'px-2.5 py-1 rounded-md bg-emerald-600 text-white font-medium transition';
-        btnText.className = 'px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition';
-      }
+    function switchOutputTab(tab) {
+      Object.entries(OUTPUT_TABS).forEach(([name, [btnId, contId]]) => {
+        const active = name === tab;
+        $(contId).classList.toggle('hidden', !active);
+        $(btnId).className = active ? TAB_ACTIVE : TAB_IDLE;
+      });
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // 72.4 -> "1:12.4"
+    function fmtClock(sec) {
+      if (sec === null || sec === undefined || !isFinite(sec)) return '?';
+      const m = Math.floor(sec / 60);
+      const s = sec - m * 60;
+      return `${m}:${s < 10 ? '0' : ''}${s.toFixed(1)}`;
+    }
+
+    function shorten(text, max = 90) {
+      const t = String(text || '').replace(/\s+/g, ' ').trim();
+      return t.length > max ? t.slice(0, max - 1) + '…' : t;
+    }
+
+    function wordsText(words, max = 14) {
+      const list = words.slice(0, max).map(w => w.word).join(' ');
+      return words.length > max ? list + ' …' : list;
     }
 
     /* =========================================================================
-       ADAPTIVE TRANSCRIPT PARSER, SCHEMA MAPPER & SCRIPT PARSER
+       APP STATE
+       ========================================================================= */
+    const state = {
+      parsedJSON: null,      // parsed transcript JSON (or null)
+      jsonInfo: null,        // { looksJSON, error, repaired, note }
+      candidates: [],        // detected word-array locations inside the JSON
+      schemaSignature: null, // used to keep the user's manual mapping while they edit
+      schemaNotes: [],       // issues found while detecting the transcript format
+      typeKey: null,         // optional "type" field (spacing / punctuation / audio_event)
+      transcriptNotes: [],   // issues found while reading words & timestamps
+      scriptNotes: [],       // issues found while reading the script
+      sections: [],
+      alignment: null,
+      mappingMessage: null   // shown in the yellow banner
+    };
+
+    /* =========================================================================
+       INPUT EVENTS, PERSISTENCE & FILE LOADING
        ========================================================================= */
     let inputDebounceTimer = null;
+    const LS_SCRIPT = 'transcriptCompressor.script';
+    const LS_TRANSCRIPT = 'transcriptCompressor.transcript';
+
+    // Bigger inputs get a longer pause before re-aligning, so typing stays smooth
+    function debounceDelay() {
+      const len = $('scriptInput').value.length + $('transcriptInput').value.length;
+      return len > 400000 ? 900 : len > 80000 ? 450 : 200;
+    }
+
+    function saveInputs() {
+      try {
+        localStorage.setItem(LS_SCRIPT, $('scriptInput').value);
+        localStorage.setItem(LS_TRANSCRIPT, $('transcriptInput').value);
+      } catch (_) { /* storage full or disabled: ignore */ }
+    }
+
+    function showAligningBadge() {
+      $('alignmentHealthBadge').innerHTML = `<i class="fa-solid fa-spinner fa-spin text-cyan-400"></i><span>Aligning…</span>`;
+    }
 
     function onInputChanged() {
       clearTimeout(inputDebounceTimer);
       inputDebounceTimer = setTimeout(() => {
-        runConversion(true);
-      }, 180);
+        saveInputs();
+        showAligningBadge();
+        setTimeout(() => runConversion(true), 0);
+      }, debounceDelay());
     }
 
-    function onTranscriptRawInput() {
+    function onTranscriptRawInput(forceReset = false) {
       clearTimeout(inputDebounceTimer);
       inputDebounceTimer = setTimeout(() => {
-        inspectAndPopulateTranscriptSchema();
-        runConversion(true);
-      }, 220);
+        saveInputs();
+        showAligningBadge();
+        setTimeout(() => {
+          inspectAndPopulateTranscriptSchema(forceReset === true);
+          runConversion(true);
+        }, 0);
+      }, debounceDelay());
     }
 
+    function setTranscriptMode(mode) {
+      $('transcriptModeSelect').value = mode;
+      $('modeObjectsBox').classList.toggle('hidden', mode !== 'objects');
+      $('modeCombinedBox').classList.toggle('hidden', mode !== 'combined');
+      $('modeTuplesBox').classList.toggle('hidden', mode !== 'tuples');
+      $('arrayPathContainer').classList.toggle('hidden', mode === 'lines');
+    }
+
+    // Called when the user changes the "Data Structure Mode" select
     function onTranscriptModeChange() {
-      const mode = document.getElementById('transcriptModeSelect').value;
-      document.getElementById('modeObjectsBox').classList.toggle('hidden', mode !== 'objects');
-      document.getElementById('modeCombinedBox').classList.toggle('hidden', mode !== 'combined');
-      document.getElementById('modeTuplesBox').classList.toggle('hidden', mode !== 'tuples');
-      document.getElementById('arrayPathContainer').classList.toggle('hidden', mode === 'lines');
+      setTranscriptMode($('transcriptModeSelect').value);
       runConversion(true);
     }
 
     function onArrayPathChange() {
-      populateKeysForSelectedArrayPath();
+      const path = $('jsonArrayPathSelect').value;
+      const cand = state.candidates.find(c => c.path === path);
+      if (cand) applyCandidate(cand);
       runConversion(true);
     }
 
-    // Safely parses complete or truncated JSON snippets (e.g. trailing comma or open brace)
-    function tryParseFlexibleJSON(rawText) {
-      if (!rawText || !rawText.trim()) return null;
-      let s = rawText.trim();
+    function openFilePicker(which) {
+      $(which === 'script' ? 'scriptFileInput' : 'transcriptFileInput').click();
+    }
 
-      // If user pasted `"words": [ ...` without outer `{ }`, wrap it
-      if (/^"[a-zA-Z0-9_]+"\s*:/.test(s) || /^"[a-zA-Z0-9_]+"\s*:\s*\[/.test(s)) {
-        s = '{' + s + '}';
+    function handleFileChosen(which, file) {
+      if (!file) return;
+      if (file.size > 60 * 1024 * 1024) {
+        showToast(`"${file.name}" is too large (over 60 MB)`, 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const text = String(reader.result || '');
+        if (which === 'script') {
+          $('scriptInput').value = text;
+          onInputChanged();
+        } else {
+          $('transcriptInput').value = text;
+          onTranscriptRawInput(true);
+        }
+        showToast(`Loaded ${file.name}`);
+      };
+      reader.onerror = () => showToast(`Could not read "${file.name}"`, 'error');
+      reader.readAsText(file);
+    }
+
+    function setupDragAndDrop() {
+      [['scriptInput', 'script'], ['transcriptInput', 'transcript']].forEach(([id, which]) => {
+        const el = $(id);
+        el.addEventListener('dragover', (e) => { e.preventDefault(); el.classList.add('ring-2', 'ring-emerald-500/60'); });
+        el.addEventListener('dragleave', () => el.classList.remove('ring-2', 'ring-emerald-500/60'));
+        el.addEventListener('drop', (e) => {
+          el.classList.remove('ring-2', 'ring-emerald-500/60');
+          const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+          if (file) {
+            e.preventDefault();
+            handleFileChosen(which, file);
+          }
+        });
+      });
+    }
+
+    function clearInputs() {
+      $('scriptInput').value = '';
+      $('transcriptInput').value = '';
+      saveInputs();
+      inspectAndPopulateTranscriptSchema(true);
+      runConversion(true);
+      showToast('Cleared both inputs');
+    }
+
+    /* =========================================================================
+       TIMESTAMP PARSING
+       ========================================================================= */
+    function isClockString(v) {
+      return typeof v === 'string' && v.includes(':');
+    }
+
+    // Returns seconds as a number, or null when the value is missing / not a time.
+    // Understands 3.566, "3.566", "3,566", "00:00:03.566", "00:00:03,566" (SRT), "3.566s" (Google), {seconds, nanos}
+    function parseTimeToSeconds(v) {
+      if (v === undefined || v === null) return null;
+      if (typeof v === 'number') return isFinite(v) ? v : null;
+      if (typeof v === 'object') {
+        if ('seconds' in v || 'nanos' in v) return (Number(v.seconds) || 0) + (Number(v.nanos) || 0) / 1e9;
+        return null;
+      }
+      let str = String(v).trim();
+      if (!str) return null;
+      str = str.replace(/s$/i, '');
+      const hms = str.match(/^(?:(\d+):)?(\d{1,2}):(\d{1,2})(?:[.,](\d+))?$/);
+      if (hms) {
+        const h = parseInt(hms[1] || '0', 10);
+        const m = parseInt(hms[2], 10);
+        const s = parseInt(hms[3], 10);
+        const frac = hms[4] ? Number('0.' + hms[4]) : 0;
+        return h * 3600 + m * 60 + s + frac;
+      }
+      if (/^-?\d+(?:\.\d+)?(?:e-?\d+)?$/i.test(str)) return parseFloat(str);
+      if (/^-?\d+,\d+$/.test(str)) return parseFloat(str.replace(',', '.'));
+      return null;
+    }
+
+    function median(nums) {
+      if (!nums.length) return null;
+      const a = nums.slice().sort((x, y) => x - y);
+      const mid = a.length >> 1;
+      return a.length % 2 ? a[mid] : (a[mid - 1] + a[mid]) / 2;
+    }
+
+    /* =========================================================================
+       FLEXIBLE JSON PARSING (with clear error messages)
+       ========================================================================= */
+    function describeJSONError(err, text, lineOffset) {
+      const msg = String((err && err.message) || err || 'Invalid JSON');
+      let line = null, col = null;
+      const lc = msg.match(/line (\d+) column (\d+)/i);
+      const pos = msg.match(/position (\d+)/i);
+      if (lc) {
+        line = parseInt(lc[1], 10);
+        col = parseInt(lc[2], 10);
+      } else if (pos) {
+        const p = Math.min(parseInt(pos[1], 10), text.length);
+        const before = text.slice(0, p);
+        line = (before.match(/\n/g) || []).length + 1;
+        col = p - before.lastIndexOf('\n');
+      }
+      let snippet = '';
+      if (line) {
+        snippet = (text.split('\n')[line - 1] || '').trim();
+        line += lineOffset;
+      }
+      return { message: msg.replace(/^JSON\.parse:\s*/, ''), line, col, snippet: shorten(snippet, 120) };
+    }
+
+    // Closes a truncated JSON document (e.g. copy-paste cut off half-way). String-aware.
+    function closeTruncatedJSON(s) {
+      const last = s.lastIndexOf('}');
+      if (last === -1) return null;
+      let t = s.slice(0, last + 1);
+      const stack = [];
+      let inStr = false, esc = false;
+      for (const ch of t) {
+        if (inStr) {
+          if (esc) esc = false;
+          else if (ch === '\\') esc = true;
+          else if (ch === '"') inStr = false;
+          continue;
+        }
+        if (ch === '"') inStr = true;
+        else if (ch === '{' || ch === '[') stack.push(ch);
+        else if (ch === '}' || ch === ']') stack.pop();
+      }
+      if (inStr) return null;
+      return t + stack.reverse().map(c => (c === '{' ? '}' : ']')).join('');
+    }
+
+    function tryParseFlexibleJSON(rawText) {
+      if (!rawText || !rawText.trim()) return { value: null, looksJSON: false };
+      const lineOffset = (rawText.match(/^\s*/)[0].match(/\n/g) || []).length;
+      let s = rawText.trim().replace(/^﻿/, '');
+
+      // `"words": [ ... ]` pasted without the outer { }
+      if (/^"[^"\n]+"\s*:/.test(s)) s = '{' + s.replace(/,\s*$/, '') + '}';
+
+      const looksJSON = /^[\[{]/.test(s);
+      let firstErr = null;
+      try {
+        return { value: JSON.parse(s), looksJSON: true };
+      } catch (e) {
+        firstErr = e;
       }
 
+      // JSON Lines (one JSON object per line)
+      const lines = s.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length > 1 && lines.every(l => /^\s*[\[{]/.test(l))) {
+        try {
+          return { value: lines.map(l => JSON.parse(l)), looksJSON: true, note: 'jsonl' };
+        } catch (_) { /* fall through */ }
+      }
+
+      if (!looksJSON) return { value: null, looksJSON: false };
+
+      // Repair 1: trailing commas like [1, 2, ]
+      const noTrailing = s.replace(/,\s*([\]}])/g, '$1');
       try {
-        return JSON.parse(s);
-      } catch (e) {
-        // Attempt auto-repair of truncated JSON array/object
-        let repaired = s;
-        // Remove trailing incomplete object after last complete `}`
-        const lastCloseBrace = repaired.lastIndexOf('}');
-        if (lastCloseBrace !== -1) {
-          repaired = repaired.slice(0, lastCloseBrace + 1);
-          const openBrackets = (repaired.match(/\[/g) || []).length - (repaired.match(/\]/g) || []).length;
-          const openBraces = (repaired.match(/\{/g) || []).length - (repaired.match(/\}/g) || []).length;
-          for (let i = 0; i < openBrackets; i++) repaired += ']';
-          for (let i = 0; i < openBraces; i++) repaired += '}';
-          try {
-            return JSON.parse(repaired);
-          } catch (_) {}
+        return { value: JSON.parse(noTrailing), looksJSON: true, repaired: 'trailing-commas' };
+      } catch (_) { /* fall through */ }
+
+      // Repair 2: truncated paste
+      const closed = closeTruncatedJSON(noTrailing);
+      if (closed) {
+        try {
+          return { value: JSON.parse(closed), looksJSON: true, repaired: 'truncated' };
+        } catch (_) { /* fall through */ }
+      }
+
+      return { value: null, looksJSON: true, error: describeJSONError(firstErr, s, lineOffset) };
+    }
+
+    /* =========================================================================
+       TRANSCRIPT SCHEMA DETECTION (finds the word list anywhere in the JSON)
+       ========================================================================= */
+    function getByKeyPath(obj, keyPath) {
+      if (obj === null || obj === undefined) return undefined;
+      if (!keyPath.includes('.')) return obj[keyPath];
+      let cur = obj;
+      for (const p of keyPath.split('.')) {
+        if (cur === null || cur === undefined || typeof cur !== 'object') return undefined;
+        cur = cur[p];
+      }
+      return cur;
+    }
+
+    // Resolves "segments.*.words" (all segments' words, flattened) or "results.channels.0.alternatives.0.words"
+    function resolvePath(root, pathStr) {
+      if (root === null || root === undefined) return [];
+      if (!pathStr || pathStr === '__root__') return Array.isArray(root) ? root : [];
+      let nodes = [root];
+      for (const p of pathStr.split('.')) {
+        const next = [];
+        for (const n of nodes) {
+          if (n === null || typeof n !== 'object') continue;
+          if (p === '*') {
+            if (Array.isArray(n)) for (const x of n) next.push(x);
+          } else if (p in n) {
+            next.push(n[p]);
+          }
         }
+        nodes = next;
+      }
+      const out = [];
+      for (const n of nodes) if (Array.isArray(n)) for (const x of n) out.push(x);
+      return out;
+    }
+
+    function discoverArrayPaths(root) {
+      const found = [];
+      const seen = new Set();
+      function walk(node, parts, depth) {
+        if (depth > 8 || node === null || typeof node !== 'object') return;
+        if (Array.isArray(node)) {
+          if (!node.length) return;
+          const pathStr = parts.length ? parts.join('.') : '__root__';
+          if (!seen.has(pathStr)) { seen.add(pathStr); found.push(pathStr); }
+          const objs = node.slice(0, 5).filter(x => x && typeof x === 'object' && !Array.isArray(x));
+          if (!objs.length) return;
+          const lastPart = parts[parts.length - 1] || '';
+          const idx = (node.length === 1 || /^alternatives$/i.test(lastPart)) ? '0' : '*';
+          const keys = new Set();
+          objs.forEach(o => Object.keys(o).forEach(k => keys.add(k)));
+          keys.forEach(k => {
+            if (k.includes('.')) return;
+            const child = objs.map(o => o[k]).find(v => v && typeof v === 'object');
+            if (child) walk(child, [...parts, idx, k], depth + 1);
+          });
+          return;
+        }
+        Object.keys(node).forEach(k => {
+          if (k.includes('.')) return;
+          const v = node[k];
+          if (v && typeof v === 'object') walk(v, [...parts, k], depth + 1);
+        });
+      }
+      walk(root, [], 0);
+      return found;
+    }
+
+    // Lists keys of word objects, including small nested ones like "alternatives.0.content" (AWS Transcribe)
+    function collectKeyPaths(objs) {
+      const keys = [];
+      const add = (k) => { if (!keys.includes(k)) keys.push(k); };
+      objs.forEach(o => {
+        Object.keys(o).forEach(k => {
+          const v = o[k];
+          if (v && typeof v === 'object') {
+            if (Array.isArray(v)) {
+              if (v.length && v.length <= 5 && v[0] && typeof v[0] === 'object' && !Array.isArray(v[0])) {
+                Object.keys(v[0]).forEach(sub => {
+                  if (typeof v[0][sub] !== 'object') add(`${k}.0.${sub}`);
+                });
+              }
+            } else if ('seconds' in v || 'nanos' in v) {
+              add(k); // Google style {seconds, nanos} timestamp
+            } else {
+              Object.keys(v).forEach(sub => { if (typeof v[sub] !== 'object') add(`${k}.${sub}`); });
+            }
+          } else {
+            add(k);
+          }
+        });
+      });
+      return keys;
+    }
+
+    const WORD_KEY_NAMES = ['punctuated_word', 'word', 'text', 'token', 'token_text', 'value', 'content', 'w', 'label', 'transcript'];
+    const START_KEY_NAMES = ['start_time', 'start', 'starttime', 'start_ms', 'startms', 'start_sec', 'start_seconds', 't_in', 'tin', 'ts', 'begin', 'from', 's', 'startoffset', 'start_offset', 'offset', 'start_ts'];
+    const END_KEY_NAMES = ['end_time', 'end', 'endtime', 'end_ms', 'endms', 'end_sec', 'end_seconds', 't_out', 'tout', 'end_ts', 'finish', 'to', 'e', 'endoffset', 'end_offset', 'stop'];
+
+    function guessObjectMapping(keys, objs) {
+      const valuesOf = (k) => objs.map(o => getByKeyPath(o, k)).filter(v => v !== undefined && v !== null);
+      const isWordy = (k) => {
+        const v = valuesOf(k);
+        return v.length > 0 && v.filter(x => typeof x === 'string').length / v.length >= 0.6 && v.some(x => /[\p{L}\p{N}]/u.test(String(x)));
+      };
+      const isTimey = (k) => {
+        const v = valuesOf(k);
+        return v.length >= Math.max(1, Math.floor(objs.length * 0.3)) && v.filter(x => parseTimeToSeconds(x) !== null).length / v.length >= 0.8;
+      };
+      const pick = (names, rx, ok, exclude) => {
+        for (const name of names) {
+          const k = keys.find(key => !exclude.includes(key) && (key.toLowerCase() === name || key.split('.').pop().toLowerCase() === name) && ok(key));
+          if (k) return k;
+        }
+        return keys.find(key => !exclude.includes(key) && rx.test(key.split('.').pop()) && ok(key)) || null;
+      };
+      const word = pick(WORD_KEY_NAMES, /word|text|tok|content|value/i, isWordy, []);
+      const start = pick(START_KEY_NAMES, /start|begin|^t_?in$/i, isTimey, [word]);
+      const end = pick(END_KEY_NAMES, /end|stop|finish|^t_?out$/i, isTimey, [word, start]);
+      const typeKey = keys.find(k => /^(type|kind|element_type)$/i.test(k)) || null;
+
+      // A single string variable that packs word + times together, e.g. {"packed": "There | 0.000 - 0.297"}
+      let combinedKey = null;
+      if (!start || !end) {
+        combinedKey = keys.find(k => {
+          const v = valuesOf(k).filter(x => typeof x === 'string');
+          return v.length && v.filter(x => parseCombinedString(x)).length / v.length >= 0.6;
+        }) || null;
+      }
+      return { word, start, end, typeKey, combinedKey };
+    }
+
+    function guessTupleIndexes(arrays) {
+      const width = Math.max(...arrays.map(a => a.length));
+      const textScore = new Array(width).fill(0);
+      const timeScore = new Array(width).fill(0);
+      arrays.forEach(a => a.forEach((v, i) => {
+        if (typeof v === 'string' && /[\p{L}]/u.test(v) && parseTimeToSeconds(v) === null) textScore[i]++;
+        else if (parseTimeToSeconds(v) !== null) timeScore[i]++;
+      }));
+      let w = textScore.indexOf(Math.max(...textScore));
+      if (textScore[w] === 0) w = 0;
+      const timeIdx = [];
+      for (let i = 0; i < width; i++) if (i !== w && timeScore[i] >= arrays.length * 0.6) timeIdx.push(i);
+      if (timeIdx.length < 2) return null;
+      return { w, s: timeIdx[0], e: timeIdx[1] };
+    }
+
+    function analyzeCandidate(path) {
+      const arr = resolvePath(state.parsedJSON, path);
+      const count = arr.length;
+      const sample = arr.slice(0, 300);
+      const label = (path === '__root__' ? '[Root Array]' : path.replace(/\.\*\./g, '[*].').replace(/\.(\d+)\./g, '[$1].'));
+      const res = { path, count, label, mode: null, score: 0, keys: [], mapping: {}, wordLevel: true };
+      if (!count) return res;
+
+      const arrays = sample.filter(Array.isArray);
+      const strings = sample.filter(x => typeof x === 'string');
+      const objs = sample.filter(x => x && typeof x === 'object' && !Array.isArray(x));
+      const avgTokens = (vals) => vals.length ? vals.reduce((a, v) => a + String(v).trim().split(/\s+/).length, 0) / vals.length : 99;
+
+      if (arrays.length >= sample.length * 0.6) {
+        const t = guessTupleIndexes(arrays);
+        res.mode = 'tuples';
+        res.mapping = { tuple: t || { w: 0, s: 1, e: 2 } };
+        res.wordLevel = t ? avgTokens(arrays.map(a => a[t.w])) <= 1.6 : false;
+        res.score = (t ? 1 : 0.05) * (res.wordLevel ? 1 : 0.02) * count;
+      } else if (strings.length >= sample.length * 0.6) {
+        const okRate = strings.filter(x => parseCombinedString(x)).length / strings.length;
+        res.mode = 'combined';
+        res.mapping = { combinedKey: '__self__' };
+        res.score = (okRate >= 0.6 ? 0.9 : 0.01) * count;
+      } else if (objs.length) {
+        res.keys = collectKeyPaths(objs);
+        const m = guessObjectMapping(res.keys, objs);
+        res.mapping = m;
+        if (m.word && (m.start || m.end)) {
+          res.mode = 'objects';
+          res.wordLevel = avgTokens(objs.map(o => getByKeyPath(o, m.word)).filter(v => typeof v === 'string')) <= 1.6;
+          res.score = (m.start && m.end ? 1 : 0.4) * (res.wordLevel ? 1 : 0.02) * count;
+        } else if (m.combinedKey) {
+          res.mode = 'combined';
+          res.score = 0.9 * count;
+        } else {
+          res.mode = 'objects';
+          res.score = 0.001 * count;
+        }
+      }
+      if (!res.wordLevel) res.label += ' · sentence-level';
+      return res;
+    }
+
+    function fillSelect(sel, keys, value) {
+      sel.innerHTML = keys.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`).join('');
+      if (value !== null && value !== undefined && keys.includes(value)) sel.value = value;
+    }
+
+    function applyCandidate(cand) {
+      const pill = $('detectedFormatPill');
+      state.typeKey = null;
+      state.mappingMessage = null;
+
+      if (cand.mode === 'tuples') {
+        setTranscriptMode('tuples');
+        const t = cand.mapping.tuple;
+        $('tupleWordIdx').value = t.w;
+        $('tupleStartIdx').value = t.s;
+        $('tupleEndIdx').value = t.e;
+        pill.textContent = `Tuple Array [${t.w},${t.s},${t.e}]`;
+        if (t.w !== 0 || t.s !== 1 || t.e !== 2) state.mappingMessage = `Array-of-arrays detected. Word is item ${t.w}, start ${t.s}, end ${t.e}.`;
+        return;
+      }
+
+      if (cand.mode === 'combined') {
+        setTranscriptMode('combined');
+        const key = cand.mapping.combinedKey || '__self__';
+        const sel = $('mapCombinedSourceKey');
+        sel.innerHTML = `<option value="__self__">[Item is String itself]</option>` +
+          cand.keys.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`).join('');
+        sel.value = key;
+        $('combinedDelimiterInput').value = 'auto';
+        pill.textContent = key === '__self__' ? 'Combined String Array' : `Single Variable (${key})`;
+        state.mappingMessage = key === '__self__'
+          ? 'Each item is one text string. Word and timestamps are split out automatically.'
+          : `Single-variable format detected ("${key}"). Word and timestamps are split out automatically.`;
+        return;
+      }
+
+      // Separate variables (objects)
+      setTranscriptMode('objects');
+      const m = cand.mapping;
+      const keys = cand.keys.length ? cand.keys : ['word', 'start_time', 'end_time'];
+      fillSelect($('mapWordKey'), keys, m.word || keys[0]);
+      fillSelect($('mapStartKey'), keys, m.start || keys[1] || keys[0]);
+      fillSelect($('mapEndKey'), keys, m.end || keys[2] || keys[0]);
+      $('mapCombinedSourceKey').innerHTML = `<option value="__self__">[Item is String itself]</option>` +
+        keys.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`).join('');
+      state.typeKey = m.typeKey || null;
+
+      const isStandard = ['word', 'text', 'punctuated_word'].includes(m.word) &&
+        ['start_time', 'start'].includes(m.start) && ['end_time', 'end'].includes(m.end);
+      if (!m.word || !m.start || !m.end) {
+        pill.textContent = 'Needs mapping';
+        state.mappingMessage = `Could not find ${[!m.word && 'a word', !m.start && 'a start-time', !m.end && 'an end-time'].filter(Boolean).join(', ')} variable automatically in: ${keys.join(', ')}. Please pick it in the Schema Mapper.`;
+      } else if (isStandard) {
+        pill.textContent = `Mapped: ${m.word} / ${m.start} / ${m.end}`;
+      } else {
+        pill.textContent = `Mapped: ${m.word} / ${m.start} / ${m.end}`;
+        state.mappingMessage = `Custom JSON variables detected at "${cand.label}". Auto-mapped word = ${m.word}, start = ${m.start}, end = ${m.end}.`;
+      }
+    }
+
+    function inspectAndPopulateTranscriptSchema(forceReset = false) {
+      const raw = $('transcriptInput').value;
+      const pill = $('detectedFormatPill');
+      const info = tryParseFlexibleJSON(raw);
+      state.jsonInfo = info;
+      state.parsedJSON = info.value;
+      state.schemaNotes = [];
+
+      if (!raw.trim()) {
+        state.schemaSignature = null;
+        state.candidates = [];
+        state.mappingMessage = null;
+        pill.textContent = 'Waiting for transcript';
+        return;
+      }
+
+      if (state.parsedJSON === null || state.parsedJSON === undefined) {
+        state.candidates = [];
+        state.mappingMessage = null;
+        if (info.looksJSON) {
+          // Broken JSON: do NOT silently fall back to text mode
+          state.schemaSignature = null;
+          pill.textContent = 'JSON error';
+          setTranscriptMode('objects');
+          return;
+        }
+        state.schemaSignature = 'lines';
+        setTranscriptMode('lines');
+        pill.textContent = /-->/.test(raw) ? 'Subtitles (SRT/VTT)' : 'Delimited Text Mode';
+        return;
+      }
+
+      if (info.repaired === 'truncated') {
+        state.schemaNotes.push({ level: 'warn', title: 'Transcript JSON looked cut off — repaired automatically', detail: 'The end of the pasted JSON was incomplete. The app closed it so it can be read, but the last word(s) may be missing. Paste the full file if possible.' });
+      } else if (info.repaired === 'trailing-commas') {
+        state.schemaNotes.push({ level: 'info', title: 'Transcript JSON had trailing commas — fixed automatically' });
+      } else if (info.note === 'jsonl') {
+        state.schemaNotes.push({ level: 'info', title: 'Read transcript as JSON Lines (one object per line)' });
+      }
+
+      const paths = discoverArrayPaths(state.parsedJSON);
+      const cands = paths.map(analyzeCandidate).filter(c => c.count > 0).sort((a, b) => b.score - a.score);
+      const signature = cands.map(c => `${c.path}:${c.mode}:${c.keys.join(',')}`).join('|');
+      const keepUserChoices = !forceReset && signature === state.schemaSignature && signature !== '';
+      state.schemaSignature = signature;
+      state.candidates = cands;
+
+      const pathSelect = $('jsonArrayPathSelect');
+      const prevPath = pathSelect.value;
+      pathSelect.innerHTML = cands.map(c => `<option value="${escapeHtml(c.path)}">${escapeHtml(c.label)} (${c.count} items)</option>`).join('');
+
+      if (!cands.length) {
+        state.schemaNotes.push({
+          level: 'error',
+          title: 'No list of words found in the transcript JSON',
+          detail: 'The JSON was read, but it does not contain any array of words. A word-by-word transcript needs a list like "words": [{"word": "Hi", "start": 0.0, "end": 0.3}, …].'
+        });
+        pill.textContent = 'No word list';
+        return;
+      }
+
+      if (keepUserChoices && cands.some(c => c.path === prevPath)) {
+        pathSelect.value = prevPath; // keep the user's manual mapping while they edit the text
+        return;
+      }
+
+      const best = cands[0];
+      pathSelect.value = best.path;
+      applyCandidate(best);
+      if (!best.wordLevel) {
+        state.schemaNotes.push({
+          level: 'warn',
+          title: 'Transcript seems to be sentence-level, not word-by-word',
+          detail: `The best list found ("${best.label}") has several words per item, so every "word" will hold a whole phrase. Export the transcript with word-level timestamps for accurate beat timings.`
+        });
+      }
+    }
+
+    /* =========================================================================
+       TRANSCRIPT WORD EXTRACTION
+       ========================================================================= */
+    // Splits strings like "There | 0.000 - 0.297", "1,000th,21.36,21.92", "0.000 0.297 There"
+    const TS_PART = '(\\d+(?::\\d{1,2}){0,2}(?:[.,]\\d+)?)s?';
+    const SEP_PART = '[\\s|,;\\-–—>\\[\\]()\\t]+';
+    const COMBINED_WORD_FIRST = new RegExp('^(.*?)' + SEP_PART + TS_PART + SEP_PART + TS_PART + '[\\s\\])]*$');
+    const COMBINED_TIME_FIRST = new RegExp('^[\\s\\[(]*' + TS_PART + SEP_PART + TS_PART + SEP_PART + '(.+)$');
+
+    function parseCombinedString(str) {
+      const s = String(str || '').trim();
+      if (!s) return null;
+      let m = s.match(COMBINED_WORD_FIRST);
+      if (m) {
+        const word = m[1].replace(/^[\s|,;:\-–—]+|[\s|,;:\-–—]+$/g, '');
+        if (word) return { word, start: m[2], end: m[3] };
+      }
+      m = s.match(COMBINED_TIME_FIRST);
+      if (m) {
+        const word = m[3].replace(/^[\s|,;:\-–—]+|[\s|,;:\-–—]+$/g, '');
+        if (word && parseTimeToSeconds(word) === null) return { word, start: m[1], end: m[2] };
       }
       return null;
     }
 
-    let cachedParsedTranscriptJSON = null;
-
-    function inspectAndPopulateTranscriptSchema() {
-      const raw = document.getElementById('transcriptInput').value.trim();
-      const alertBanner = document.getElementById('schemaAlertBanner');
-      const pill = document.getElementById('detectedFormatPill');
-      alertBanner.classList.add('hidden');
-
-      if (!raw) {
-        cachedParsedTranscriptJSON = null;
-        return;
-      }
-
-      const parsed = tryParseFlexibleJSON(raw);
-      cachedParsedTranscriptJSON = parsed;
-
-      if (!parsed) {
-        // Plain text / delimited lines fallback
-        document.getElementById('transcriptModeSelect').value = 'lines';
-        pill.textContent = 'Delimited Text Mode';
-        onTranscriptModeChange();
-        return;
-      }
-
-      // Discover candidate arrays inside parsed JSON
-      const arrayPaths = [];
-      if (Array.isArray(parsed)) {
-        arrayPaths.push({ path: '__root__', label: `[Root Array] (${parsed.length} items)`, arr: parsed });
-      } else if (typeof parsed === 'object') {
-        Object.keys(parsed).forEach(k => {
-          if (Array.isArray(parsed[k])) {
-            arrayPaths.push({ path: k, label: `${k} (${parsed[k].length} items)`, arr: parsed[k] });
-          } else if (parsed[k] && typeof parsed[k] === 'object') {
-            Object.keys(parsed[k]).forEach(subK => {
-              if (Array.isArray(parsed[k][subK])) {
-                const p = `${k}.${subK}`;
-                arrayPaths.push({ path: p, label: `${p} (${parsed[k][subK].length} items)`, arr: parsed[k][subK] });
-              }
-            });
-          }
+    function parseSubtitleCues(raw) {
+      const items = [];
+      let cues = 0, multiWordCues = 0;
+      const blocks = raw.replace(/\r/g, '').split(/\n\s*\n/);
+      for (const block of blocks) {
+        const ls = block.split('\n').map(x => x.trim()).filter(Boolean);
+        const ti = ls.findIndex(l => l.includes('-->'));
+        if (ti < 0) continue;
+        const m = ls[ti].match(/([\d:.,]+)\s*-->\s*([\d:.,]+)/);
+        if (!m) continue;
+        const s = parseTimeToSeconds(m[1]);
+        const e = parseTimeToSeconds(m[2]);
+        const text = ls.slice(ti + 1).join(' ').replace(/<[^>]+>/g, ' ').replace(/\{[^}]*\}/g, ' ').trim();
+        const toks = text.split(/\s+/).filter(Boolean);
+        if (!toks.length || s === null || e === null) continue;
+        cues++;
+        if (toks.length > 1) multiWordCues++;
+        // Spread the cue duration over its words by character length
+        const total = toks.reduce((a, t) => a + t.length + 1, 0);
+        let acc = 0;
+        toks.forEach(t => {
+          const ws = s + (e - s) * acc / total;
+          acc += t.length + 1;
+          const we = s + (e - s) * acc / total;
+          items.push({ word: t, startNum: ws, endNum: we, estimated: toks.length > 1 });
         });
       }
-
-      const pathSelect = document.getElementById('jsonArrayPathSelect');
-      pathSelect.innerHTML = '';
-      arrayPaths.forEach(ap => {
-        const opt = document.createElement('option');
-        opt.value = ap.path;
-        opt.textContent = ap.label;
-        pathSelect.appendChild(opt);
-      });
-
-      if (arrayPaths.length > 0) {
-        pathSelect.value = arrayPaths[0].path;
-      }
-
-      populateKeysForSelectedArrayPath();
-    }
-
-    function getArrayByPath(rootObj, pathStr) {
-      if (!rootObj) return [];
-      if (pathStr === '__root__') return Array.isArray(rootObj) ? rootObj : [];
-      const parts = pathStr.split('.');
-      let cur = rootObj;
-      for (const p of parts) {
-        if (cur && typeof cur === 'object' && p in cur) cur = cur[p];
-        else return [];
-      }
-      return Array.isArray(cur) ? cur : [];
-    }
-
-    function populateKeysForSelectedArrayPath() {
-      const pathStr = document.getElementById('jsonArrayPathSelect').value;
-      const arr = getArrayByPath(cachedParsedTranscriptJSON, pathStr);
-      const alertBanner = document.getElementById('schemaAlertBanner');
-      const alertText = document.getElementById('schemaAlertText');
-      const pill = document.getElementById('detectedFormatPill');
-
-      if (!arr || arr.length === 0) return;
-
-      const sample = arr[0];
-
-      // Case 1: Array of Tuples e.g. ["There", "00:00:00.000", "00:00:00.297"]
-      if (Array.isArray(sample)) {
-        document.getElementById('transcriptModeSelect').value = 'tuples';
-        pill.textContent = 'Tuple Array [w,s,e]';
-        onTranscriptModeChange();
-        return;
-      }
-
-      // Case 2: Array of Strings e.g. ["There|0.000|0.297"]
-      if (typeof sample === 'string') {
-        document.getElementById('transcriptModeSelect').value = 'combined';
-        const combSel = document.getElementById('mapCombinedSourceKey');
-        combSel.innerHTML = `<option value="__self__">[Item is String itself]</option>`;
-        pill.textContent = 'Combined String Array';
-        onTranscriptModeChange();
-        return;
-      }
-
-      // Case 3: Array of Objects
-      if (typeof sample === 'object' && sample !== null) {
-        const keys = Object.keys(sample);
-
-        // If object has only 1 string property containing pipes/delimiters, switch to Combined Single Variable mode
-        if (keys.length === 1 && typeof sample[keys[0]] === 'string' && /[\|\-]/.test(sample[keys[0]])) {
-          document.getElementById('transcriptModeSelect').value = 'combined';
-          const combSel = document.getElementById('mapCombinedSourceKey');
-          combSel.innerHTML = keys.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`).join('');
-          combSel.value = keys[0];
-          pill.textContent = `Single Variable (${keys[0]})`;
-          alertBanner.classList.remove('hidden');
-          alertText.textContent = `Single-variable format detected ("${keys[0]}"). Automatically mapped using split rules!`;
-          onTranscriptModeChange();
-          return;
-        }
-
-        // Standard or Renamed Separate Variables Mode
-        document.getElementById('transcriptModeSelect').value = 'objects';
-        const wordSel = document.getElementById('mapWordKey');
-        const startSel = document.getElementById('mapStartKey');
-        const endSel = document.getElementById('mapEndKey');
-        const combSel = document.getElementById('mapCombinedSourceKey');
-
-        const optionsHtml = keys.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`).join('');
-        wordSel.innerHTML = optionsHtml;
-        startSel.innerHTML = optionsHtml;
-        endSel.innerHTML = optionsHtml;
-        combSel.innerHTML = `<option value="__self__">[Item is String itself]</option>` + optionsHtml;
-
-        // Heuristic auto-matching for Word, Start, and End keys
-        const guessedWord = keys.find(k => /^(word|text|token|token_text|w|value|label)$/i.test(k))
-          || keys.find(k => /word|text|tok/i.test(k))
-          || keys[0];
-        const guessedStart = keys.find(k => /^(start_time|start|t_in|begin|from|s|startTime)$/i.test(k))
-          || keys.find(k => /start|in|begin/i.test(k))
-          || keys[1] || keys[0];
-        const guessedEnd = keys.find(k => /^(end_time|end|t_out|finish|to|e|endTime)$/i.test(k))
-          || keys.find(k => /end|out|stop/i.test(k))
-          || keys[2] || keys[0];
-
-        wordSel.value = guessedWord;
-        startSel.value = guessedStart;
-        endSel.value = guessedEnd;
-
-        const isStandard = (guessedWord === 'word' && guessedStart === 'start_time' && guessedEnd === 'end_time');
-        if (!isStandard) {
-          pill.textContent = `Mapped: ${guessedWord}/${guessedStart}/${guessedEnd}`;
-          alertBanner.classList.remove('hidden');
-          alertText.textContent = `Custom JSON variables detected (${keys.join(', ')}). Auto-mapped to [${guessedWord} | ${guessedStart} | ${guessedEnd}].`;
-        } else {
-          pill.textContent = 'Standard JSON Mapped';
-        }
-
-        onTranscriptModeChange();
-      }
-    }
-
-    // Converts "00:00:03.566" or number to exact 3-decimal seconds ("3.566") preserving JSON milliseconds
-    function formatTimestampValue(rawVal, policy) {
-      if (rawVal === undefined || rawVal === null) return '0.000';
-      const str = String(rawVal).trim();
-      if (!str) return '0.000';
-      if (policy === 'raw') return str;
-
-      if (policy === 'ms_to_sec') {
-        const num = parseFloat(str);
-        return isNaN(num) ? '0.000' : (num / 1000).toFixed(3);
-      }
-
-      // Check HH:MM:SS.mmm or MM:SS.mmm format while preserving exact decimal digits
-      const hmsMatch = str.match(/^(?:(\d+):)?(\d{1,2}):(\d{1,2})(?:\.(\d+))?$/);
-      if (hmsMatch) {
-        const hours = parseInt(hmsMatch[1] || '0', 10);
-        const mins = parseInt(hmsMatch[2] || '0', 10);
-        const secs = parseInt(hmsMatch[3] || '0', 10);
-        const decPart = (hmsMatch[4] !== undefined) ? hmsMatch[4] : '000';
-        const totalWholeSeconds = (hours * 3600) + (mins * 60) + secs;
-        return `${totalWholeSeconds}.${decPart}`;
-      }
-
-      // Plain numeric seconds e.g. 3.566 or 0.3
-      const num = parseFloat(str);
-      if (!isNaN(num)) {
-        const dotIdx = str.indexOf('.');
-        if (dotIdx !== -1) {
-          const dec = str.slice(dotIdx + 1).replace(/[^0-9]/g, '');
-          if (dec.length >= 3) return `${Math.floor(num)}.${dec}`;
-        }
-        return num.toFixed(3);
-      }
-      return str;
+      return { items, cues, multiWordCues };
     }
 
     function extractTranscriptWords() {
-      const raw = document.getElementById('transcriptInput').value.trim();
-      if (!raw) return [];
+      const notes = [];
+      const raw = $('transcriptInput').value;
+      if (!raw.trim()) return { words: [], notes };
 
-      const mode = document.getElementById('transcriptModeSelect').value;
-      const timePolicy = document.getElementById('timeFormatPolicy').value;
-      const results = [];
+      const mode = $('transcriptModeSelect').value;
+      const policy = $('timeFormatPolicy').value;
+      const items = [];
 
       if (mode === 'lines') {
-        const lines = raw.split(/\r?\n/);
-        lines.forEach(line => {
-          const trimmed = line.trim();
-          if (!trimmed || trimmed.startsWith('#')) return;
-          const parts = trimmed.split('|').map(s => s.trim());
-          if (parts.length >= 3) {
-            results.push({
-              word: parts[0],
-              start: formatTimestampValue(parts[1], timePolicy),
-              end: formatTimestampValue(parts[2], timePolicy)
+        if (/-->/.test(raw)) {
+          const sub = parseSubtitleCues(raw);
+          sub.items.forEach(it => items.push(it));
+          if (!sub.cues) {
+            notes.push({ level: 'error', title: 'Could not read the subtitle file', detail: 'Lines with "-->" were found, but no cue had both a valid time range and text.' });
+          } else if (sub.multiWordCues) {
+            notes.push({
+              level: 'warn',
+              title: 'Subtitle file (SRT/VTT) is sentence-level — word times are estimated',
+              detail: `${sub.multiWordCues} of ${sub.cues} cues contain several words. Each word's time was spread evenly across its cue, so beat start/end times are approximate. Use a word-level JSON export for exact timings.`
             });
           }
-        });
-        return results;
+        } else {
+          const unparsed = [];
+          let firstContent = true;
+          raw.split(/\r?\n/).forEach((line, i) => {
+            const t = line.trim();
+            if (!t || t.startsWith('#') || /^WEBVTT/i.test(t)) return;
+            const p = parseCombinedString(t);
+            if (p) {
+              items.push({ word: p.word, startRaw: p.start, endRaw: p.end });
+            } else if (!(firstContent && !/\d/.test(t))) { // allow one header line like "word,start,end"
+              unparsed.push({ line: i + 1, text: t });
+            }
+            firstContent = false;
+          });
+          if (unparsed.length) {
+            const examples = unparsed.slice(0, 3).map(u => `line ${u.line}: "${shorten(u.text, 60)}"`).join('; ');
+            if (!items.length) {
+              notes.push({
+                level: 'error',
+                title: 'Transcript format not recognised',
+                detail: `No line looked like "word | start | end". Examples: ${examples}. Paste word-level JSON, or lines such as "There|0.000|0.297".`
+              });
+            } else {
+              notes.push({
+                level: 'warn',
+                title: `${unparsed.length} transcript line(s) could not be read and were skipped`,
+                detail: `Expected "word | start | end". ${examples}${unparsed.length > 3 ? ' …' : ''}`
+              });
+            }
+          }
+        }
+        return finalizeWords(items, policy, notes);
       }
 
-      const parsed = cachedParsedTranscriptJSON || tryParseFlexibleJSON(raw);
-      if (!parsed) return results;
-
-      const pathStr = document.getElementById('jsonArrayPathSelect').value || '__root__';
-      const arr = getArrayByPath(parsed, pathStr);
-      if (!Array.isArray(arr)) return results;
-
-      if (mode === 'objects') {
-        const wKey = document.getElementById('mapWordKey').value || 'word';
-        const sKey = document.getElementById('mapStartKey').value || 'start_time';
-        const eKey = document.getElementById('mapEndKey').value || 'end_time';
-
-        arr.forEach(item => {
-          if (!item || typeof item !== 'object') return;
-          const w = item[wKey];
-          if (w === undefined || w === null || String(w).trim() === '') return;
-          results.push({
-            word: String(w).trim(),
-            start: formatTimestampValue(item[sKey], timePolicy),
-            end: formatTimestampValue(item[eKey], timePolicy)
+      // JSON based modes
+      const info = state.jsonInfo || tryParseFlexibleJSON(raw);
+      if (state.parsedJSON === null || state.parsedJSON === undefined) {
+        if (info.error) {
+          const where = info.error.line ? ` at line ${info.error.line}${info.error.col ? `, column ${info.error.col}` : ''}` : '';
+          notes.push({
+            level: 'error',
+            title: `Transcript JSON has a syntax error${where}`,
+            detail: `${info.error.message}${info.error.snippet ? ` — near: ${info.error.snippet}` : ''}. Common causes: a missing comma between items, a missing quote, or an unfinished copy-paste.`
           });
+        } else {
+          notes.push({ level: 'error', title: 'Transcript could not be read', detail: 'Switch "Data Structure Mode" to Plain Text if this is not JSON.' });
+        }
+        return { words: [], notes };
+      }
+
+      const pathStr = $('jsonArrayPathSelect').value || '__root__';
+      const arr = resolvePath(state.parsedJSON, pathStr);
+      if (!arr.length) {
+        notes.push({ level: 'error', title: 'The selected "JSON Array Location" has no items', detail: 'Pick another location in the Schema Mapper.' });
+        return { words: [], notes };
+      }
+
+      let wrongShape = 0;
+      if (mode === 'objects') {
+        const wKey = $('mapWordKey').value;
+        const sKey = $('mapStartKey').value;
+        const eKey = $('mapEndKey').value;
+        const tKey = state.typeKey;
+        arr.forEach(item => {
+          if (!item || typeof item !== 'object' || Array.isArray(item)) { wrongShape++; return; }
+          const w = getByKeyPath(item, wKey);
+          if (w === undefined || w === null || typeof w === 'object') return;
+          let kind = 'word';
+          if (tKey) {
+            const t = String(getByKeyPath(item, tKey) || '').toLowerCase();
+            if (/spacing|whitespace/.test(t)) return;
+            if (/audio_event|event|sound|noise|music/.test(t)) kind = 'skip';
+            else if (/punct/.test(t)) kind = 'punct';
+          }
+          items.push({ word: w, startRaw: getByKeyPath(item, sKey), endRaw: getByKeyPath(item, eKey), kind });
         });
+        if (wKey && sKey && wKey === sKey) notes.push({ level: 'warn', title: 'Word and Start Time use the same variable', detail: 'Check the Schema Mapper.' });
       } else if (mode === 'combined') {
-        const srcKey = document.getElementById('mapCombinedSourceKey').value;
-        const delimPattern = document.getElementById('combinedDelimiterInput').value || '[\\|\\s\\-–,]+';
-        let regex;
-        try { regex = new RegExp(delimPattern); } catch (_) { regex = /[\|\s\-–,]+/; }
-
-        const wIdx = parseInt(document.getElementById('combWordIdx').value || '0', 10);
-        const sIdx = parseInt(document.getElementById('combStartIdx').value || '1', 10);
-        const eIdx = parseInt(document.getElementById('combEndIdx').value || '2', 10);
-
+        const srcKey = $('mapCombinedSourceKey').value;
+        const delim = ($('combinedDelimiterInput').value || 'auto').trim();
+        let regex = null;
+        if (delim && delim.toLowerCase() !== 'auto') {
+          try { regex = new RegExp(delim); } catch (e) {
+            notes.push({ level: 'warn', title: 'Split regex is invalid — using automatic splitting', detail: e.message });
+          }
+        }
+        const wIdx = parseInt($('combWordIdx').value || '0', 10);
+        const sIdx = parseInt($('combStartIdx').value || '1', 10);
+        const eIdx = parseInt($('combEndIdx').value || '2', 10);
+        let failed = 0, firstFail = null;
         arr.forEach(item => {
           const strVal = (srcKey === '__self__' || typeof item === 'string')
-            ? String(item)
-            : (item && item[srcKey] !== undefined ? String(item[srcKey]) : '');
+            ? (typeof item === 'string' ? item : '')
+            : (item && getByKeyPath(item, srcKey) !== undefined ? String(getByKeyPath(item, srcKey)) : '');
           if (!strVal.trim()) return;
-          const parts = strVal.trim().split(regex).filter(Boolean);
-          if (parts.length > Math.max(wIdx, sIdx, eIdx)) {
-            results.push({
-              word: parts[wIdx],
-              start: formatTimestampValue(parts[sIdx], timePolicy),
-              end: formatTimestampValue(parts[eIdx], timePolicy)
-            });
+          if (regex) {
+            const parts = strVal.trim().split(regex).filter(Boolean);
+            if (parts.length > Math.max(wIdx, sIdx, eIdx)) {
+              items.push({ word: parts[wIdx], startRaw: parts[sIdx], endRaw: parts[eIdx] });
+            } else { failed++; firstFail = firstFail || strVal; }
+          } else {
+            const p = parseCombinedString(strVal);
+            if (p) items.push({ word: p.word, startRaw: p.start, endRaw: p.end });
+            else { failed++; firstFail = firstFail || strVal; }
           }
         });
-      } else if (mode === 'tuples') {
-        const wIdx = parseInt(document.getElementById('tupleWordIdx').value || '0', 10);
-        const sIdx = parseInt(document.getElementById('tupleStartIdx').value || '1', 10);
-        const eIdx = parseInt(document.getElementById('tupleEndIdx').value || '2', 10);
-
-        arr.forEach(item => {
-          if (!Array.isArray(item)) return;
-          if (item[wIdx] === undefined) return;
-          results.push({
-            word: String(item[wIdx]).trim(),
-            start: formatTimestampValue(item[sIdx], timePolicy),
-            end: formatTimestampValue(item[eIdx], timePolicy)
+        if (failed) {
+          notes.push({
+            level: items.length ? 'warn' : 'error',
+            title: `${failed} combined value(s) could not be split into word + start + end`,
+            detail: `Example: "${shorten(firstFail, 60)}". Check "Source Variable" and the split settings.`
           });
+        }
+      } else if (mode === 'tuples') {
+        const wIdx = parseInt($('tupleWordIdx').value || '0', 10);
+        const sIdx = parseInt($('tupleStartIdx').value || '1', 10);
+        const eIdx = parseInt($('tupleEndIdx').value || '2', 10);
+        arr.forEach(item => {
+          if (!Array.isArray(item)) { wrongShape++; return; }
+          if (item[wIdx] === undefined || item[wIdx] === null) return;
+          items.push({ word: item[wIdx], startRaw: item[sIdx], endRaw: item[eIdx] });
+        });
+      }
+      if (wrongShape) {
+        notes.push({ level: 'warn', title: `${wrongShape} item(s) in the word list have a different shape and were skipped`, detail: 'Check "Data Structure Mode" in the Schema Mapper.' });
+      }
+      if (!items.length && !notes.some(n => n.level === 'error')) {
+        notes.push({ level: 'error', title: 'No words could be read with the current mapping', detail: 'Open the Schema Mapper and check which variable holds the word and the timestamps.' });
+      }
+      return finalizeWords(items, policy, notes);
+    }
+
+    // Cleans words, merges stray punctuation, converts units, fills missing timestamps and checks order
+    function finalizeWords(items, policy, notes) {
+      const words = [];
+      let attachedPunct = 0, skippedEvents = 0, firstEvent = null;
+
+      for (const it of items) {
+        const text = String(it.word ?? '').replace(/\s+/g, ' ').trim();
+        if (it.kind === 'skip') { skippedEvents++; firstEvent = firstEvent || text; continue; }
+        if (!text) continue;
+        const isPunctOnly = !/[\p{L}\p{N}&%$€£@#]/u.test(text);
+        if (isPunctOnly || it.kind === 'punct') {
+          if (words.length) { words[words.length - 1].word += text; attachedPunct++; }
+          continue;
+        }
+        words.push({
+          word: text,
+          sRaw: it.startRaw,
+          eRaw: it.endRaw,
+          s: it.startNum !== undefined ? it.startNum : parseTimeToSeconds(it.startRaw),
+          e: it.endNum !== undefined ? it.endNum : parseTimeToSeconds(it.endRaw),
+          estimated: !!it.estimated,
+          inSeconds: it.startNum !== undefined
         });
       }
 
-      return results;
+      if (skippedEvents) {
+        notes.push({ level: 'info', title: `${skippedEvents} non-speech event(s) skipped`, detail: firstEvent ? `e.g. "${shorten(firstEvent, 40)}"` : '' });
+      }
+
+      // Unit detection (milliseconds / 100-ns ticks)
+      const convertible = (w) => !w.inSeconds && !isClockString(w.sRaw) && !isClockString(w.eRaw);
+      let factor = 1;
+      if (policy === 'ms_to_sec') {
+        factor = 0.001;
+      } else if (policy === 'auto') {
+        const durs = [];
+        const gaps = [];
+        let prevS = null;
+        words.forEach(w => {
+          if (!convertible(w)) return;
+          if (w.s !== null && w.e !== null && w.e > w.s) durs.push(w.e - w.s);
+          if (w.s !== null && prevS !== null && w.s > prevS) gaps.push(w.s - prevS);
+          if (w.s !== null) prevS = w.s;
+        });
+        const med = median(durs.length ? durs : gaps);
+        if (med !== null && med > 20000) {
+          factor = 1e-7;
+          notes.push({ level: 'info', title: 'Timestamps look like 100-nanosecond ticks — converted to seconds', detail: 'Change "Timestamp Precision" if this is wrong.' });
+        } else if (med !== null && med > 20) {
+          factor = 0.001;
+          notes.push({ level: 'info', title: 'Timestamps look like milliseconds — converted to seconds', detail: `A typical word lasted ${Math.round(med)} units, which only makes sense in milliseconds. Change "Timestamp Precision" if this is wrong.` });
+        }
+      }
+      if (factor !== 1) {
+        words.forEach(w => {
+          if (!convertible(w)) return;
+          if (w.s !== null) w.s *= factor;
+          if (w.e !== null) w.e *= factor;
+        });
+      }
+
+      // Fill missing timestamps from neighbouring words (instead of a misleading 0.000)
+      let missing = 0, firstMissing = null;
+      words.forEach(w => {
+        if (w.s === null || w.e === null) {
+          missing++;
+          firstMissing = firstMissing || w;
+          w.estimated = true;
+        }
+      });
+      if (missing === words.length && words.length) {
+        notes.push({
+          level: 'error',
+          title: 'No timestamps could be read',
+          detail: 'Every word is missing its start/end time. Check the Start/End Time variables in the Schema Mapper.'
+        });
+        words.forEach((w, i) => { w.s = 0; w.e = 0; });
+      } else if (missing) {
+        for (let i = 0; i < words.length; i++) {
+          const w = words[i];
+          if (w.s === null) {
+            const prev = words[i - 1];
+            let next = null;
+            for (let k = i + 1; k < words.length; k++) if (words[k].s !== null) { next = words[k].s; break; }
+            w.s = prev ? (prev.e ?? prev.s) : (next ?? 0);
+          }
+        }
+        for (let i = 0; i < words.length; i++) {
+          const w = words[i];
+          if (w.e === null) {
+            const next = words[i + 1];
+            w.e = Math.max(w.s, next ? next.s : w.s);
+          }
+        }
+        notes.push({
+          level: 'warn',
+          title: `${missing} word(s) had no timestamp — estimated from neighbouring words`,
+          detail: `First one: "${firstMissing.word}" (now ~${firstMissing.s.toFixed(3)}s). These are marked with ~ in Alignment Check. Speech tools often drop times on numbers or names.`
+        });
+      }
+
+      // Order / sanity checks
+      let backwards = 0, firstBack = null, negative = 0;
+      for (let i = 0; i < words.length; i++) {
+        const w = words[i];
+        if (w.e < w.s) { negative++; w.e = w.s; }
+        if (i > 0 && w.s < words[i - 1].s - 0.0005) {
+          backwards++;
+          firstBack = firstBack || { w, prev: words[i - 1] };
+        }
+      }
+      if (backwards) {
+        notes.push({
+          level: 'warn',
+          title: `Timestamps jump backwards ${backwards} time(s)`,
+          detail: `First at "${firstBack.w.word}" (${firstBack.w.s.toFixed(3)}s) right after "${firstBack.prev.word}" (${firstBack.prev.s.toFixed(3)}s). The transcript may be merged from several files or out of order — beat times could be wrong.`
+        });
+      }
+      if (negative) {
+        notes.push({ level: 'info', title: `${negative} word(s) ended before they started — end time set to start time` });
+      }
+
+      words.forEach((w, i) => {
+        w.idx = i;
+        w.word = w.word.replace(/\|/g, '/'); // keep the Word|Start|End format unambiguous
+        if (policy === 'raw' && !w.estimated && w.sRaw !== undefined && w.sRaw !== null && w.eRaw !== undefined && w.eRaw !== null && typeof w.sRaw !== 'object') {
+          w.start = String(w.sRaw).trim();
+          w.end = String(w.eRaw).trim();
+        } else {
+          w.start = w.s.toFixed(3);
+          w.end = w.e.toFixed(3);
+        }
+      });
+      return { words, notes };
     }
 
+    /* =========================================================================
+       SCRIPT PARSER (Markdown tables, inline beats, heading beats)
+       ========================================================================= */
+    const DEFAULT_SECTION_REGEX = '^#{1,4}\\s+(.+)$';
+
     function autoDetectScriptStructure() {
-      document.getElementById('scriptParseMode').value = 'auto';
-      document.getElementById('scriptKeyCol').value = 'auto';
-      document.getElementById('scriptTextCol').value = 'auto';
+      $('scriptParseMode').value = 'auto';
+      $('scriptKeyCol').value = 'auto';
+      $('scriptTextCol').value = 'auto';
+      $('sectionRegexInput').value = DEFAULT_SECTION_REGEX;
       runConversion(true);
       showToast('Auto-detected script table structure');
     }
@@ -999,103 +1684,209 @@ LAST KEY: «10»
       return `«${inner}»`;
     }
 
+    // Splits "| a | b \| c | d |" into cells (supports escaped pipes and rows without a trailing pipe)
+    function splitTableRow(line) {
+      let t = line.trim();
+      if (t.startsWith('|')) t = t.slice(1);
+      if (t.endsWith('|') && !t.endsWith('\\|')) t = t.slice(0, -1);
+      const cells = [];
+      let cur = '';
+      for (let i = 0; i < t.length; i++) {
+        const ch = t[i];
+        if (ch === '\\' && t[i + 1] === '|') { cur += '|'; i++; continue; }
+        if (ch === '|') { cells.push(cur.trim()); cur = ''; } else cur += ch;
+      }
+      cells.push(cur.trim());
+      return cells;
+    }
+
+    const isSeparatorRow = (cells) => cells.length > 0 && cells.every(c => /^:?-{2,}:?$/.test(c.replace(/\s/g, '')) || c === '');
+    const looksLikeBeatKey = (c) => /«[^»]+»/.test(c || '') || /^\[?\d+[a-z]?\]?$/i.test(String(c || '').trim());
+
+    function analyzeHeaderRow(cells) {
+      const keyIdx = cells.findIndex(c => /^(key|beat|beat key|beat #|#|id|no\.?|num(ber)?)$/i.test(c.replace(/[*_`]/g, '').trim()));
+      const textIdx = cells.findIndex(c => /script|line|narration|voice|\bvo\b|dialogue|spoken|copy|text/i.test(c) && !/visual|b-?roll|note|type|key/i.test(c));
+      return { keyIdx, textIdx };
+    }
+
+    // Removes things that are written in the script but not spoken (markdown, [B-ROLL] tags, inline code)
+    function cleanScriptText(t) {
+      return String(t || '')
+        .replace(/<br\s*\/?>/gi, ' ')
+        .replace(/`[^`]*`/g, ' ')
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        .replace(/\[[^\]]*\]/g, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/[*~]+/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
     function parseScriptStructure() {
-      const rawScript = document.getElementById('scriptInput').value || '';
+      const notes = [];
+      const rawScript = $('scriptInput').value || '';
       const lines = rawScript.split(/\r?\n/);
 
-      const parseMode = document.getElementById('scriptParseMode').value;
-      const keyColSetting = document.getElementById('scriptKeyCol').value;
-      const textColSetting = document.getElementById('scriptTextCol').value;
-      const keyFormatMode = document.getElementById('beatKeyFormat').value;
+      const parseMode = $('scriptParseMode').value;
+      const keyColSetting = $('scriptKeyCol').value;
+      const textColSetting = $('scriptTextCol').value;
+      const keyFormatMode = $('beatKeyFormat').value;
 
+      const regexStr = ($('sectionRegexInput').value || '').trim() || DEFAULT_SECTION_REGEX;
+      const customRegex = regexStr !== DEFAULT_SECTION_REGEX;
       let secRegex;
       try {
-        secRegex = new RegExp(document.getElementById('sectionRegexInput').value || '^#{1,4}\\s+(.+)$');
-      } catch (_) {
-        secRegex = /^#{1,4}\s+(.+)$/;
+        secRegex = new RegExp(regexStr);
+      } catch (e) {
+        notes.push({ level: 'warn', title: 'Section heading regex is invalid — using default "## Heading"', detail: e.message });
+        secRegex = new RegExp(DEFAULT_SECTION_REGEX);
       }
 
+      const usesH2 = lines.some(l => /^\s*#{2,6}\s+\S/.test(l));
       const sections = [];
       let currentSection = null;
+      let currentTable = null;
+      let headingBeat = null; // a "### «1»" beat that collects the lines below it
 
-      lines.forEach(line => {
-        const trimmed = line.trim();
-        if (!trimmed) return;
-        if (/^LAST\s+KEY\s*:/i.test(trimmed)) return;
+      const ensureSection = () => {
+        if (!currentSection) {
+          currentSection = { title: '0. Main Section', beats: [] };
+          sections.push(currentSection);
+        }
+        return currentSection;
+      };
+      const pushBeat = (rawKey, text, lineNo) => {
+        const beat = { key: formatBeatKey(rawKey, keyFormatMode), scriptLine: String(text || '').trim(), lineNo, matchedWords: [] };
+        ensureSection().beats.push(beat);
+        return beat;
+      };
+      const startSection = (title) => {
+        currentSection = { title: cleanScriptText(title) || title, beats: [] };
+        sections.push(currentSection);
+        headingBeat = null;
+      };
 
-        // Check Section Heading (ignore H1 document title `# Title` if `## Section` is used, unless it has a number)
-        if (/^#{2,4}\s+/.test(trimmed) || (secRegex.test(trimmed) && !/^#\s+/.test(trimmed))) {
-          const m = trimmed.match(secRegex) || trimmed.match(/^#{1,4}\s+(.+)$/);
-          if (m && m[1]) {
-            currentSection = { title: m[1].trim(), beats: [] };
-            sections.push(currentSection);
-            return;
+      for (let li = 0; li < lines.length; li++) {
+        const trimmed = lines[li].trim();
+        if (!trimmed) continue;
+        if (/^LAST\s+KEY\s*:/i.test(trimmed)) continue;
+        const isTableLine = trimmed.startsWith('|');
+        if (!isTableLine) currentTable = null;
+
+        // Markdown headings
+        const heading = trimmed.match(/^(#{1,6})\s+(.+?)\s*#*$/);
+        if (heading) {
+          const level = heading[1].length;
+          const content = heading[2].trim();
+          const beatHeading = content.match(/^(«[^»]+»|\[\d+[a-z]?\])\s*[:\-–—|.]?\s*(.*)$/i);
+          if (beatHeading && level >= 2 && parseMode !== 'table') {
+            headingBeat = pushBeat(beatHeading[1], beatHeading[2], li + 1);
+            continue;
           }
+          if (!customRegex && level === 1 && usesH2) { headingBeat = null; continue; } // document title
+          const m = trimmed.match(secRegex);
+          if (m) { startSection((m[1] || m[0]).trim()); continue; }
+          if (!customRegex) { startSection(content); continue; }
+          headingBeat = null;
+          continue; // heading that the custom regex does not accept
         }
 
-        // Check Markdown Table Row
-        if ((parseMode === 'auto' || parseMode === 'table') && trimmed.startsWith('|') && trimmed.endsWith('|')) {
-          const cells = trimmed.slice(1, -1).split('|').map(c => c.trim());
-          if (cells.length >= 2) {
-            // Skip separator `| --- | --- |` or header `| Key | Script Line |`
-            if (cells.every(c => /^[:\-]+$/.test(c))) return;
-            if (/^key$/i.test(cells[0].replace(/[^a-zA-Z]/g, '')) && /script|line|text/i.test(cells[1])) return;
-
-            let keyIdx = keyColSetting === 'auto'
-              ? cells.findIndex(c => /«[^»]+»|^\d+$/.test(c))
-              : parseInt(keyColSetting, 10);
-
-            if (keyIdx < 0 || keyIdx >= cells.length) return;
-
-            let textIdx = textColSetting === 'auto'
-              ? keyIdx + 1
-              : parseInt(textColSetting, 10);
-
-            if (textIdx >= cells.length) textIdx = cells.length - 1;
-
-            const rawKey = cells[keyIdx];
-            const scriptLine = cells[textIdx];
-            if (!rawKey || !scriptLine) return;
-
-            if (!currentSection) {
-              currentSection = { title: '0. Main Section', beats: [] };
-              sections.push(currentSection);
-            }
-
-            currentSection.beats.push({
-              key: formatBeatKey(rawKey, keyFormatMode),
-              scriptLine: scriptLine.trim(),
-              matchedWords: []
-            });
-            return;
-          }
+        // Custom section patterns that are not markdown headings (e.g. "SECTION 2: Backstory")
+        if (customRegex && !isTableLine) {
+          const m = trimmed.match(secRegex);
+          if (m) { startSection((m[1] || m[0]).trim()); continue; }
         }
 
-        // Check Inline Beat format e.g. `«1» There was a time...`
-        if (parseMode === 'auto' || parseMode === 'inline') {
-          const inlineMatch = trimmed.match(/^(«[^»]+»|\[\d+\])\s*[\|\-:]*\s+(.+)$/);
-          if (inlineMatch) {
-            if (!currentSection) {
-              currentSection = { title: '0. Main Section', beats: [] };
-              sections.push(currentSection);
-            }
-            currentSection.beats.push({
-              key: formatBeatKey(inlineMatch[1], keyFormatMode),
-              scriptLine: inlineMatch[2].trim(),
-              matchedWords: []
-            });
+        // Markdown table rows
+        if (isTableLine) {
+          if (parseMode === 'inline') continue;
+          headingBeat = null;
+          const cells = splitTableRow(trimmed);
+          if (isSeparatorRow(cells)) continue;
+          const nextLine = (lines[li + 1] || '').trim();
+          if (nextLine.startsWith('|') && isSeparatorRow(splitTableRow(nextLine))) {
+            currentTable = analyzeHeaderRow(cells); // header row
+            continue;
+          }
+          if (!currentTable && /^(key|beat|#|id)$/i.test(cells[0].replace(/[^\w#]/g, '')) && cells.some(c => /script|line|text/i.test(c))) {
+            currentTable = analyzeHeaderRow(cells); // header row without separator
+            continue;
+          }
+
+          let keyIdx;
+          if (keyColSetting === 'auto') {
+            keyIdx = currentTable && currentTable.keyIdx >= 0 && looksLikeBeatKey(cells[currentTable.keyIdx])
+              ? currentTable.keyIdx
+              : cells.findIndex(looksLikeBeatKey);
+          } else {
+            keyIdx = parseInt(keyColSetting, 10);
+          }
+          if (keyIdx < 0 || keyIdx >= cells.length || !cells[keyIdx]) continue; // not a beat row
+
+          let textIdx;
+          if (textColSetting === 'auto') {
+            textIdx = currentTable && currentTable.textIdx >= 0 && currentTable.textIdx !== keyIdx ? currentTable.textIdx : keyIdx + 1;
+          } else {
+            textIdx = parseInt(textColSetting, 10);
+          }
+          const text = textIdx !== keyIdx && textIdx < cells.length ? cells[textIdx] : '';
+          pushBeat(cells[keyIdx], text, li + 1);
+          continue;
+        }
+
+        // Inline beats: "«1» There was a time…"  /  "- [1]: There was…"
+        if (parseMode !== 'table') {
+          const im = trimmed.match(/^(?:[-*]\s+)?(«[^»]+»|\[\d+[a-z]?\])\s*[|:\-–—.)]*\s*(.+)$/i);
+          if (im) {
+            pushBeat(im[1], im[2], li + 1);
+            headingBeat = null;
+            continue;
+          }
+          // Text lines under a "### «1»" heading belong to that beat (skip visual notes)
+          if (headingBeat && !/^(`|\[|>|<!--|---)/.test(trimmed) && !/^(type|visuals?|notes?|b-?roll|on-?screen|overlay|sources?)\s*:/i.test(trimmed)) {
+            headingBeat.scriptLine += (headingBeat.scriptLine ? ' ' : '') + trimmed;
           }
         }
+      }
+
+      const finalSections = sections.filter(s => s.beats.length > 0);
+      const allBeats = [];
+      finalSections.forEach(s => s.beats.forEach(b => allBeats.push(b)));
+
+      // Script checks
+      const emptyBeats = allBeats.filter(b => !cleanScriptText(b.scriptLine));
+      if (emptyBeats.length) {
+        notes.push({
+          level: 'warn',
+          title: `${emptyBeats.length} beat(s) have no script text, so they cannot be matched: ${emptyBeats.slice(0, 8).map(b => b.key).join(', ')}${emptyBeats.length > 8 ? ' …' : ''}`,
+          detail: `First one is on script line ${emptyBeats[0].lineNo}. If the text is in another column, set "Script Text Col #" in Map Script.`
+        });
+      }
+      const seen = new Map();
+      const dups = [];
+      allBeats.forEach(b => {
+        if (seen.has(b.key)) dups.push(b);
+        else seen.set(b.key, b);
       });
-
-      return sections.filter(s => s.beats.length > 0);
+      if (dups.length) {
+        notes.push({
+          level: 'warn',
+          title: `Duplicate beat key(s) in the script: ${[...new Set(dups.map(b => b.key))].slice(0, 8).join(', ')}`,
+          detail: `e.g. ${dups[0].key} appears again on script line ${dups[0].lineNo}. The AI will not be able to tell these beats apart.`
+        });
+      }
+      if (!allBeats.length && rawScript.trim()) {
+        notes.push({
+          level: 'error',
+          title: 'No beats found in the script',
+          detail: 'Expected markdown table rows like "| «1» | Script line |", inline lines like "«1» Script line", or headings like "### «1»". Use "Map Script" to choose the key and text columns.'
+        });
+      }
+      return { sections: finalSections, notes };
     }
 
     /* =========================================================================
-       INTELLIGENT GLOBAL SEQUENCE ALIGNER (DYNAMIC PROGRAMMING + BOUNDARY POLISH)
-       Fixes beat drift caused by numbers ("2" vs "two", "1,000th" vs "thousandth"),
-       compound words ("month-to-month" vs "month to month"), and homophones
-       ("Crumbl" vs "crumble").
+       TOKEN NORMALISATION & SIMILARITY
        ========================================================================= */
     const CANONICAL_NUMBERS = {
       'zero': '0', 'one': '1', 'first': '1st', 'two': '2', 'second': '2nd',
@@ -1108,662 +1899,1069 @@ LAST KEY: «10»
       'nineteen': '19', 'twenty': '20', 'thirty': '30', 'forty': '40',
       'fifty': '50', 'sixty': '60', 'seventy': '70', 'eighty': '80',
       'ninety': '90', 'hundred': '100', 'hundredth': '100th',
-      'thousand': '1000', 'thousandth': '1000th', '1000th': '1000th',
+      'thousand': '1000', 'thousandth': '1000th',
       'million': '1000000', 'billion': '1000000000'
     };
+    const MAGNITUDE_WORDS = new Set(['hundred', 'thousand', 'million', 'billion', 'trillion', 'k', 'm', 'bn', 'mn']);
 
     const COMMON_STOPWORDS = new Set([
       'the', 'a', 'an', 'in', 'on', 'of', 'to', 'and', 'or', 'for', 'with', 'at', 'by', 'from', 'it', 'is', 'was', 'were', 'had', 'that'
     ]);
+    const FILLER_WORDS = new Set(['uh', 'um', 'uhm', 'umm', 'erm', 'er', 'ah', 'hmm', 'mm', 'mhm', 'uhh']);
 
-    // Normalizes any script or transcript token into a canonical comparable string
+    // Normalises any script or transcript token into a comparable form (works for any language/script)
     function normalizeToken(rawStr) {
-      if (!rawStr) return '';
-      // Remove commas inside numbers (e.g., "1,000th" -> "1000th", "$350,000" -> "350000")
-      let s = String(rawStr).toLowerCase().replace(/(\d),(\d)/g, '$1$2');
-      // Strip leading/trailing punctuation and apostrophes
-      s = s.replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, '').replace(/['’]s$/g, '').replace(/['’]/g, '');
+      if (rawStr === undefined || rawStr === null) return '';
+      let s = String(rawStr).normalize('NFKD').replace(/[̀-ًͯ-ٰٟ]/g, '').toLowerCase();
+      s = s.replace(/(\d),(\d)/g, '$1$2');
+      if (s === '&') return 'and';
+      if (s === '+') return 'plus';
+      s = s.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
+      s = s.replace(/['’`]s$/, '').replace(/['’`]/g, '');
       if (!s) return '';
-
-      // Brand / phonetic normalizations
-      if (s === 'crumble' || s === 'crumbls' || s === 'crumbles') s = 'crumbl';
-      if (s === 'cookies') s = 'cookie';
-      if (s === 'mcdonalds') s = 'mcdonald';
-
       if (CANONICAL_NUMBERS[s]) return CANONICAL_NUMBERS[s];
       return s;
     }
 
     function hasSentenceEndPunctuation(rawWord) {
-      return /[.!?]["'”’)]*$/.test(String(rawWord || '').trim());
+      return /[.!?…]["'”’)\]]*$/.test(String(rawWord || '').trim());
     }
 
     function hasClausePunctuation(rawWord) {
-      return /[,;:—\-]["'”’)]*$/.test(String(rawWord || '').trim());
+      return /[,;:—\-]["'”’)\]]*$/.test(String(rawWord || '').trim());
     }
 
-    // Computes similarity score between a normalized script token and normalized transcript word
-    function tokenSimilarityScore(normS, normT) {
-      if (!normS || !normT) return -2.0;
-      if (normS === normT) {
-        // Distinctive content words get a higher anchor reward than common stopwords ("the", "in", "a")
-        return COMMON_STOPWORDS.has(normS) ? 2.2 : 4.5;
-      }
-
-      // Check prefix / stem match (e.g., "store" vs "stores", "opening" vs "opened")
-      if (normS.length >= 4 && normT.length >= 4) {
-        if (normS.startsWith(normT) || normT.startsWith(normS)) {
-          return 3.2;
-        }
-        // Levenshtein edit distance for minor ASR spelling differences
-        const dist = levenshteinDistance(normS, normT);
-        const maxLen = Math.max(normS.length, normT.length);
-        const ratio = 1 - dist / maxLen;
-        if (ratio >= 0.75) return 3.0;
-        if (ratio >= 0.60) return 1.2;
-      }
-
-      // Partial number match (e.g. "350000" vs "350")
-      if (/^\d+$/.test(normS) && /^\d+$/.test(normT)) {
-        if (normS.includes(normT) || normT.includes(normS)) return 2.5;
-      }
-
-      return -2.2; // Mismatch penalty
-    }
-
+    let levRowA = new Int32Array(64);
+    let levRowB = new Int32Array(64);
     function levenshteinDistance(a, b) {
       if (a === b) return 0;
       const m = a.length, n = b.length;
-      if (Math.abs(m - n) > 4) return Math.abs(m - n);
-      const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
-      for (let i = 0; i <= m; i++) dp[i][0] = i;
-      for (let j = 0; j <= n; j++) dp[0][j] = j;
+      if (!m) return n;
+      if (!n) return m;
+      if (n + 1 > levRowA.length) { levRowA = new Int32Array(n + 1); levRowB = new Int32Array(n + 1); }
+      let prev = levRowA, cur = levRowB;
+      for (let j = 0; j <= n; j++) prev[j] = j;
       for (let i = 1; i <= m; i++) {
+        cur[0] = i;
+        const ca = a.charCodeAt(i - 1);
         for (let j = 1; j <= n; j++) {
-          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-          dp[i][j] = Math.min(
-            dp[i - 1][j] + 1,
-            dp[i][j - 1] + 1,
-            dp[i - 1][j - 1] + cost
-          );
+          let v = prev[j - 1] + (ca === b.charCodeAt(j - 1) ? 0 : 1);
+          if (prev[j] + 1 < v) v = prev[j] + 1;
+          if (cur[j - 1] + 1 < v) v = cur[j - 1] + 1;
+          cur[j] = v;
         }
+        const t = prev; prev = cur; cur = t;
       }
-      return dp[m][n];
+      return prev[n];
     }
 
-    // Expands script beat line into fine-grained tokens (splitting hyphenated compounds like "month-to-month" and "$350,000")
+    // Similarity between a normalised script token and a normalised transcript word
+    function tokenSimilarityScore(normS, normT) {
+      if (!normS || !normT) return -2.0;
+      if (normS === normT) return COMMON_STOPWORDS.has(normS) ? 2.2 : 4.5;
+
+      const ls = normS.length, lt = normT.length;
+      if (ls >= 4 && lt >= 4) {
+        const shorter = ls <= lt ? normS : normT;
+        const longer = ls <= lt ? normT : normS;
+        // Stem match: "store"/"stores", "crumbl"/"crumble", "cookie"/"cookies"
+        if (longer.startsWith(shorter) && longer.length - shorter.length <= 3) return 3.2;
+        const maxLen = Math.max(ls, lt);
+        if (Math.abs(ls - lt) <= maxLen * 0.4) {
+          const ratio = 1 - levenshteinDistance(normS, normT) / maxLen;
+          if (ratio >= 0.75) return 3.0;
+          if (ratio >= 0.60) return 1.2;
+        }
+      }
+
+      // Partial number match ("2017" vs "20"/"17" from "twenty seventeen")
+      if (/^\d+$/.test(normS) && /^\d+$/.test(normT) && Math.min(ls, lt) >= 2) {
+        if (normS.includes(normT) || normT.includes(normS)) return 2.5;
+      }
+      return -2.2;
+    }
+
+    // Expands a beat's script text into tokens ("month-to-month" -> month, to, month; "$2 billion" -> 2 billion (dollars))
     function expandScriptBeatTokens(scriptLine, beatIdx) {
-      if (!scriptLine) return [];
-      const rawSpaceTokens = scriptLine.trim().split(/\s+/).filter(Boolean);
-      const expanded = [];
-
-      rawSpaceTokens.forEach((rawTok, idxInSpace) => {
-        // Split hyphenated words like "month-to-month" or "palm-oil" into sub-tokens so they align 1-to-1 with spoken words
-        const subParts = rawTok.split(/[-–—]+/).filter(Boolean);
-        subParts.forEach((sub, sIdx) => {
-          const isFirstInBeat = expanded.length === 0;
-          const isLastInBeat = (idxInSpace === rawSpaceTokens.length - 1) && (sIdx === subParts.length - 1);
-          const norm = normalizeToken(sub);
-          if (norm) {
-            expanded.push({
-              raw: sub,
-              norm,
-              beatIdx,
-              isFirstInBeat,
-              isLastInBeat,
-              endsSentence: hasSentenceEndPunctuation(sub),
-              endsClause: hasClausePunctuation(sub)
-            });
-          }
-
-          // If token has currency symbol like "$350,000" or "$80,000" and "dollars" isn't explicitly next,
-          // note that spoken audio often says "dollars" after currency figures
-          if (/^\$\d/.test(sub) && sIdx === subParts.length - 1) {
-            expanded.push({
-              raw: '(dollars)',
-              norm: 'dollar',
-              beatIdx,
-              isFirstInBeat: false,
-              isLastInBeat,
-              isOptionalCurrencyUnit: true,
-              endsSentence: hasSentenceEndPunctuation(sub),
-              endsClause: false
-            });
-          }
-          // Same for "%" -> spoken "percent"
-          if (/%$/.test(sub)) {
-            expanded.push({
-              raw: '(percent)',
-              norm: 'percent',
-              beatIdx,
-              isFirstInBeat: false,
-              isLastInBeat,
-              isOptionalCurrencyUnit: true,
-              endsSentence: hasSentenceEndPunctuation(sub),
-              endsClause: false
-            });
-          }
-        });
+      const clean = cleanScriptText(scriptLine);
+      if (!clean) return [];
+      const subs = [];
+      clean.split(/\s+/).filter(Boolean).forEach(rawTok => {
+        rawTok.split(/[-–—\/]+/).filter(Boolean).forEach(sub => subs.push(sub));
       });
 
-      // Ensure last token in beat is marked isLastInBeat
-      if (expanded.length > 0) {
-        expanded.forEach(t => t.isLastInBeat = false);
-        expanded[expanded.length - 1].isLastInBeat = true;
+      const expanded = [];
+      const optional = (raw, norm, endsSentence) => ({
+        raw, norm, beatIdx, isOptionalCurrencyUnit: true, endsSentence, endsClause: false
+      });
+      let pendingDollar = false;
+      for (let i = 0; i < subs.length; i++) {
+        const sub = subs[i];
+        const norm = normalizeToken(sub);
+        if (norm) {
+          expanded.push({ raw: sub, norm, beatIdx, endsSentence: hasSentenceEndPunctuation(sub), endsClause: hasClausePunctuation(sub) });
+        }
+        if (pendingDollar) {
+          expanded.push(optional('(dollars)', 'dollars', hasSentenceEndPunctuation(sub)));
+          pendingDollar = false;
+        }
+        // Spoken audio usually says "dollars" after "$350,000" or after "$2 billion"
+        if (/^\$\d/.test(sub)) {
+          const next = subs[i + 1] ? normalizeToken(subs[i + 1]) : '';
+          const nextRaw = subs[i + 1] ? subs[i + 1].toLowerCase().replace(/[^a-z]/g, '') : '';
+          if (MAGNITUDE_WORDS.has(nextRaw) || ['100', '1000', '1000000', '1000000000'].includes(next)) pendingDollar = true;
+          else expanded.push(optional('(dollars)', 'dollars', hasSentenceEndPunctuation(sub)));
+        }
+        if (/%[.,!?]*$/.test(sub)) expanded.push(optional('(percent)', 'percent', hasSentenceEndPunctuation(sub)));
       }
+
+      expanded.forEach((t, i) => {
+        t.isFirstInBeat = i === 0;
+        t.isLastInBeat = i === expanded.length - 1;
+      });
       return expanded;
     }
 
-    // Stores current aligned state so user can manually nudge boundaries if needed
-    let currentAlignedSectionsState = null;
-    let currentLeftoverWordsState = [];
+    /* =========================================================================
+       GLOBAL SEQUENCE ALIGNER (DYNAMIC PROGRAMMING) + MISMATCH DETECTION
+       ========================================================================= */
+    const GAP_SCRIPT = -1.1;      // a script word that was not spoken
+    const GAP_TRANS = -1.4;       // a spoken word that is not in the script
+    const GAP_FILLER = -0.3;      // "uh", "um" … cheap to skip
+    const MAX_DP_CELLS = 180e6;   // ~180 MB of browser memory
+    const LEADING = -2, TRAILING = -3;
 
-    function alignWordsToBeats(sections, transcriptWords) {
+    const contentSet = (norms) => new Set(norms.filter(n => n && !COMMON_STOPWORDS.has(n) && !FILLER_WORDS.has(n)));
+    const overlapRatio = (a, b) => {
+      if (!a.size) return 0;
+      let hit = 0;
+      a.forEach(x => { if (b.has(x)) hit++; });
+      return hit / a.size;
+    };
+
+    function alignWordsToBeats(sections, words) {
       const allBeats = [];
       const scriptTokens = [];
-
       sections.forEach(sec => {
         sec.beats.forEach(beat => {
-          const bIdx = allBeats.length;
-          beat.beatIndex = bIdx;
+          beat.beatIndex = allBeats.length;
+          beat.sectionTitle = sec.title;
           beat.matchedWords = [];
-          beat.expectedTokens = expandScriptBeatTokens(beat.scriptLine, bIdx);
-          beat.expectedTokens.forEach(tok => scriptTokens.push(tok));
+          beat.expectedTokens = expandScriptBeatTokens(beat.scriptLine, beat.beatIndex);
+          beat.expectedTokens.forEach(t => { t.globalIdx = scriptTokens.length; scriptTokens.push(t); });
+          beat.content = contentSet(beat.expectedTokens.filter(t => !t.isOptionalCurrencyUnit).map(t => t.norm));
           allBeats.push(beat);
         });
       });
 
       const M = scriptTokens.length;
-      const N = transcriptWords.length;
+      const N = words.length;
+      const align = { allBeats, words, scriptTokens, leading: [], trailing: [], extraRuns: [], notes: [], tokWord: new Int32Array(M).fill(-1) };
+      words.forEach(w => {
+        w.status = 'unmatched';
+        w.tok = -1;
+        w.norm = normalizeToken(w.word);
+        w.isFiller = FILLER_WORDS.has(w.norm);
+      });
+      if (!N) return align;
+      if (!M) { align.leading = words.slice(); return align; }
 
-      if (M === 0 || N === 0) {
-        return { allBeats, leftoverWords: transcriptWords.slice(), consumedCount: 0 };
+      if ((M + 1) * (N + 1) > MAX_DP_CELLS) {
+        align.notes.push({
+          level: 'error',
+          title: 'Too large to align in the browser',
+          detail: `${M.toLocaleString()} script words × ${N.toLocaleString()} transcript words is too much memory. Split the script and transcript into parts (e.g. per section) and convert each part.`
+        });
+        align.leading = words.slice();
+        return align;
       }
 
-      // Prepare normalized transcript tokens
-      const transTokens = transcriptWords.map((w, idx) => ({
-        index: idx,
-        raw: w.word,
-        norm: normalizeToken(w.word),
-        endsSentence: hasSentenceEndPunctuation(w.word),
-        endsClause: hasClausePunctuation(w.word),
-        wordObj: w
-      }));
+      // Map tokens to ids so similarity is computed once per unique pair
+      const sMap = new Map(), tMap = new Map(), sU = [], tU = [];
+      const sIds = new Int32Array(M), tIds = new Int32Array(N);
+      scriptTokens.forEach((t, i) => {
+        let id = sMap.get(t.norm);
+        if (id === undefined) { id = sU.length; sMap.set(t.norm, id); sU.push(t.norm); }
+        sIds[i] = id;
+      });
+      words.forEach((w, j) => {
+        let id = tMap.get(w.norm);
+        if (id === undefined) { id = tU.length; tMap.set(w.norm, id); tU.push(w.norm); }
+        tIds[j] = id;
+      });
+      const UT = tU.length;
+      // One similarity row per unique script word (cached while memory allows)
+      const cacheRows = sU.length * UT <= 16e6;
+      const rowCache = new Map();
+      const simRow = (si) => {
+        let row = rowCache.get(si);
+        if (!row) {
+          row = new Float32Array(UT);
+          for (let t = 0; t < UT; t++) row[t] = tokenSimilarityScore(sU[si], tU[t]);
+          if (cacheRows) rowCache.set(si, row);
+        }
+        return row;
+      };
+      const sim = (si, ti) => simRow(si)[ti];
 
-      /* -----------------------------------------------------------------------
-         GLOBAL SEQUENCE ALIGNMENT (Needleman-Wunsch / Semi-Global DP)
-         Aligns N transcript words to a prefix (or full sequence) of M script tokens.
-         Because the user might paste a partial transcript (e.g. first 20 words)
-         for a 68-beat script, we allow ending at ANY script token `i` without
-         penalizing unconsumed trailing script beats!
-         ----------------------------------------------------------------------- */
-      const GAP_SCRIPT = -1.1;     // Skipping a script word (or optional currency word)
-      const GAP_TRANS = -1.4;      // Extra spoken word in transcript
+      const tEndsS = new Uint8Array(N), tEndsC = new Uint8Array(N), tGap = new Float32Array(N);
+      words.forEach((w, j) => {
+        tEndsS[j] = hasSentenceEndPunctuation(w.word) ? 1 : 0;
+        tEndsC[j] = hasClausePunctuation(w.word) ? 1 : 0;
+        tGap[j] = w.isFiller ? GAP_FILLER : GAP_TRANS;
+      });
 
-      // Use typed arrays for fast DP over large scripts
+      // DP: every transcript word is consumed; leading and trailing script beats may be skipped for free
+      // (so a partial transcript of any part of the script works)
       const cols = N + 1;
-      const dp = new Float32Array((M + 1) * cols);
-      const ptr = new Uint8Array((M + 1) * cols); // 1 = diag (match/sub), 2 = up (skip script token), 3 = left (insert transcript word)
+      const ptr = new Uint8Array((M + 1) * cols); // 1 = match/substitute, 2 = skip script token, 3 = extra spoken word
+      let prev = new Float32Array(cols), cur = new Float32Array(cols);
+      for (let j = 1; j <= N; j++) { prev[j] = prev[j - 1] + tGap[j - 1]; ptr[j] = 3; }
+      let bestI = 0, bestScore = prev[N];
 
-      // Initialize base cases
       for (let i = 1; i <= M; i++) {
         const tok = scriptTokens[i - 1];
-        const stepCost = tok.isOptionalCurrencyUnit ? -0.1 : GAP_SCRIPT;
-        dp[i * cols + 0] = dp[(i - 1) * cols + 0] + stepCost;
-        ptr[i * cols + 0] = 2;
-      }
-      for (let j = 1; j <= N; j++) {
-        dp[0 * cols + j] = dp[0 * cols + (j - 1)] + GAP_TRANS;
-        ptr[0 * cols + j] = 3;
-      }
-
-      // Fill DP Matrix
-      for (let i = 1; i <= M; i++) {
-        const sTok = scriptTokens[i - 1];
-        const skipScriptPenalty = sTok.isOptionalCurrencyUnit ? -0.15 : GAP_SCRIPT;
-        const rowOffset = i * cols;
-        const prevRowOffset = (i - 1) * cols;
-
+        const row_sim = simRow(sIds[i - 1]);
+        const skip = tok.isOptionalCurrencyUnit ? -0.15 : GAP_SCRIPT;
+        const isLast = tok.isLastInBeat, tokEndsS = tok.endsSentence;
+        const row = i * cols;
+        cur[0] = 0;
+        ptr[row] = 2;
         for (let j = 1; j <= N; j++) {
-          const tTok = transTokens[j - 1];
-          let matchScore = tokenSimilarityScore(sTok.norm, tTok.norm);
-
-          // Punctuation & Beat Boundary Alignment Bonus!
-          // If both the script token is at the end of a beat AND the transcript word ends with a period '.',
-          // give a strong structural anchor bonus so beat boundaries lock onto sentence endings!
-          if (sTok.isLastInBeat && tTok.endsSentence) {
-            matchScore += 2.0;
-          } else if (sTok.isLastInBeat && tTok.endsClause) {
-            matchScore += 0.8;
-          } else if (!sTok.isLastInBeat && tTok.endsSentence && sTok.endsSentence) {
-            matchScore += 1.0;
+          const s = row_sim[tIds[j - 1]];
+          let sc = s;
+          // Beat boundaries like to sit on sentence endings
+          if (isLast) {
+            if (tEndsS[j - 1]) sc += s > 0 ? 2.0 : 0.6;
+            else if (tEndsC[j - 1]) sc += s > 0 ? 0.8 : 0.2;
+          } else if (tokEndsS && tEndsS[j - 1] && s > 0) {
+            sc += 1.0;
           }
-
-          // Prevent a non-last script token from falsely consuming a period-ending transcript word if the next script token is the actual beat end
-          const candDiag = dp[prevRowOffset + (j - 1)] + matchScore;
-          const candUp = dp[prevRowOffset + j] + skipScriptPenalty;
-          const candLeft = dp[rowOffset + (j - 1)] + GAP_TRANS;
-
-          if (candDiag >= candUp && candDiag >= candLeft) {
-            dp[rowOffset + j] = candDiag;
-            ptr[rowOffset + j] = 1;
-          } else if (candUp >= candLeft) {
-            dp[rowOffset + j] = candUp;
-            ptr[rowOffset + j] = 2;
-          } else {
-            dp[rowOffset + j] = candLeft;
-            ptr[rowOffset + j] = 3;
-          }
+          const d = prev[j - 1] + sc;
+          const u = prev[j] + skip;
+          const l = cur[j - 1] + tGap[j - 1];
+          if (d >= u && d >= l) { cur[j] = d; ptr[row + j] = 1; }
+          else if (u >= l) { cur[j] = u; ptr[row + j] = 2; }
+          else { cur[j] = l; ptr[row + j] = 3; }
         }
+        if (cur[N] > bestScore) { bestScore = cur[N]; bestI = i; }
+        const t = prev; prev = cur; cur = t;
       }
 
-      // Find the best ending script token index `bestI` for all N transcript words
-      // (Supports partial transcripts where N words only cover the first K script tokens)
-      let bestI = M;
-      let bestScore = -Infinity;
-      for (let i = 1; i <= M; i++) {
-        const score = dp[i * cols + N];
-        if (score > bestScore) {
-          bestScore = score;
-          bestI = i;
-        }
-      }
-
-      // Backtrack from (bestI, N) to assign each transcript word `j-1` to a script token `i-1`
-      const wordBeatAssignment = new Int32Array(N).fill(-1);
-      let currI = bestI;
-      let currJ = N;
-
-      while (currI > 0 && currJ > 0) {
-        const move = ptr[currI * cols + currJ];
-        if (move === 1) {
-          wordBeatAssignment[currJ - 1] = scriptTokens[currI - 1].beatIdx;
-          currI--;
-          currJ--;
-        } else if (move === 2) {
-          currI--;
+      // Backtrack
+      const op = new Uint8Array(N);       // 1 match, 2 substitution, 3 extra word
+      const wTok = new Int32Array(N).fill(-1);
+      let i = bestI, j = N;
+      while (j > 0) {
+        if (i === 0) { op[j - 1] = 3; j--; continue; }
+        const mv = ptr[i * cols + j];
+        if (mv === 1) {
+          const s = sim(sIds[i - 1], tIds[j - 1]);
+          op[j - 1] = s >= 2.0 ? 1 : 2;
+          wTok[j - 1] = i - 1;
+          align.tokWord[i - 1] = j - 1;
+          i--; j--;
+        } else if (mv === 2) {
+          i--;
         } else {
-          // Transcript insertion: inherit beatIdx of current script token
-          wordBeatAssignment[currJ - 1] = scriptTokens[Math.max(0, currI - 1)].beatIdx;
-          currJ--;
+          op[j - 1] = 3;
+          j--;
         }
       }
-      while (currJ > 0) {
-        wordBeatAssignment[currJ - 1] = 0;
-        currJ--;
+      for (let x = 0; x < N; x++) {
+        const w = words[x];
+        w.tok = wTok[x];
+        w.status = op[x] === 1 ? 'match' : op[x] === 2 ? 'sub' : 'ins';
+        if (op[x] === 2) w.expected = scriptTokens[wTok[x]].raw;
       }
 
-      // Enforce monotonic non-decreasing beat assignments
-      for (let j = 1; j < N; j++) {
-        if (wordBeatAssignment[j] < wordBeatAssignment[j - 1]) {
-          wordBeatAssignment[j] = wordBeatAssignment[j - 1];
+      // Assign each word to a beat
+      const assign = new Int32Array(N).fill(-1);
+      for (let x = 0; x < N; x++) if (op[x] !== 3) assign[x] = scriptTokens[wTok[x]].beatIdx;
+
+      const beatHasTokenMatch = (b) => allBeats[b].expectedTokens.some(t => align.tokWord[t.globalIdx] >= 0);
+
+      let x = 0;
+      while (x < N) {
+        if (op[x] !== 3) { x++; continue; }
+        let k = x;
+        while (k < N && op[k] === 3) k++;
+        const run = [];
+        for (let y = x; y < k; y++) run.push(y);
+        const solid = run.filter(y => !words[y].isFiller).length;
+        const prevTok = x > 0 ? wTok[x - 1] : -1;
+        const nextTok = k < N ? wTok[k] : -1;
+        const bA = prevTok >= 0 ? scriptTokens[prevTok].beatIdx : -1;
+        const bB = nextTok >= 0 ? scriptTokens[nextTok].beatIdx : -1;
+        const runInfo = { from: x, to: k, beatA: bA, beatB: bB, kind: 'extra' };
+
+        if (bA < 0 && bB < 0) {
+          run.forEach(y => { assign[y] = LEADING; });
+        } else if (bA < 0) {
+          const v = solid >= 3 ? LEADING : bB;
+          run.forEach(y => { assign[y] = v; });
+        } else if (bB < 0) {
+          const v = solid >= 3 ? TRAILING : bA;
+          run.forEach(y => { assign[y] = v; });
+        } else {
+          const runSet = contentSet(run.map(y => words[y].norm));
+          let owner;
+          if (bA === bB) {
+            owner = () => bA;
+          } else if (bB - bA === 2 && solid >= 3 && !beatHasTokenMatch(bA + 1)) {
+            // Exactly one beat between A and B was not found: these words are most likely that beat, reworded
+            owner = () => bA + 1;
+            runInfo.kind = 'reworded';
+            runInfo.target = bA + 1;
+          } else {
+            const ovA = overlapRatio(runSet, allBeats[bA].content);
+            const ovB = overlapRatio(runSet, allBeats[bB].content);
+            if (runSet.size >= 2 && ovB >= 0.5 && ovB >= ovA) owner = () => bB;       // false start of B
+            else if (runSet.size >= 2 && ovA >= 0.5) owner = () => bA;                // repeat of A
+            else {
+              // Split at the last sentence ending inside the run
+              let split = -1;
+              for (let y = k - 1; y >= x - 1; y--) if (tEndsS[y]) { split = y; break; }
+              if (split < 0) split = scriptTokens[prevTok].isLastInBeat ? x - 1 : k - 1;
+              owner = (y) => (y <= split ? bA : bB);
+            }
+          }
+          run.forEach(y => { assign[y] = owner(y); });
+          if (solid >= 4 || runInfo.kind === 'reworded') align.extraRuns.push(runInfo);
         }
+        x = k;
       }
 
-      /* -----------------------------------------------------------------------
-         PASS 2: BOUNDARY REFINEMENT POLISH
-         Inspects adjacent beats (Beat A -> Beat B) to ensure no boundary word
-         leaked across the border due to stopwords or numbers.
-         ----------------------------------------------------------------------- */
+      // Keep beat order monotonic
+      let lastBeat = -1;
+      for (let y = 0; y < N; y++) {
+        if (assign[y] < 0) continue;
+        if (assign[y] < lastBeat) assign[y] = lastBeat;
+        else lastBeat = assign[y];
+      }
+
+      // Boundary polish: fix a single word that leaked across a beat border
       for (let pass = 0; pass < 2; pass++) {
-        for (let j = 0; j < N - 1; j++) {
-          const bLeft = wordBeatAssignment[j];
-          const bRight = wordBeatAssignment[j + 1];
+        for (let y = 0; y < N - 1; y++) {
+          const bLeft = assign[y], bRight = assign[y + 1];
           if (bLeft === bRight || bLeft < 0 || bRight < 0) continue;
-
-          const beatA = allBeats[bLeft];
-          const beatB = allBeats[bRight];
-          if (!beatA || !beatB) continue;
-
-          const firstExpectedB = beatB.expectedTokens[0]?.norm;
-          const lastExpectedA = beatA.expectedTokens[beatA.expectedTokens.length - 1]?.norm;
-
-          // Case 1: Did the last word of Beat A actually match the FIRST word of Beat B
-          // while the word before it ended with a period '.'?
-          if (
-            firstExpectedB &&
-            transTokens[j].norm === firstExpectedB &&
-            j > 0 &&
-            (transTokens[j - 1].endsSentence || transTokens[j - 1].norm === lastExpectedA)
-          ) {
-            wordBeatAssignment[j] = bRight;
+          const beatA = allBeats[bLeft], beatB = allBeats[bRight];
+          const firstB = beatB.expectedTokens[0]?.norm;
+          const lastA = beatA.expectedTokens[beatA.expectedTokens.length - 1]?.norm;
+          if (firstB && words[y].norm === firstB && y > 0 && assign[y - 1] === bLeft &&
+              (tEndsS[y - 1] || words[y - 1].norm === lastA) && words[y].norm !== lastA) {
+            assign[y] = bRight;
           }
-
-          // Case 2: Did the first word of Beat B actually match the LAST word of Beat A
-          // (and has sentence-ending punctuation)?
-          if (
-            lastExpectedA &&
-            transTokens[j + 1].norm === lastExpectedA &&
-            transTokens[j + 1].endsSentence &&
-            transTokens[j + 1].norm !== firstExpectedB
-          ) {
-            wordBeatAssignment[j + 1] = bLeft;
+          if (lastA && words[y + 1].norm === lastA && tEndsS[y + 1] && words[y + 1].norm !== firstB &&
+              (y + 2 >= N || assign[y + 2] !== bLeft)) {
+            assign[y + 1] = bLeft;
           }
         }
       }
 
-      // Populate beat.matchedWords from finalized assignments
-      for (let j = 0; j < N; j++) {
-        const bIdx = wordBeatAssignment[j];
-        if (bIdx >= 0 && bIdx < allBeats.length) {
-          allBeats[bIdx].matchedWords.push(transcriptWords[j]);
-        }
-      }
+      words.forEach((w, y) => {
+        const b = assign[y];
+        if (b === LEADING) { w.status = 'unmatched'; align.leading.push(w); }
+        else if (b === TRAILING) { w.status = 'unmatched'; align.trailing.push(w); }
+        else if (b >= 0) allBeats[b].matchedWords.push(w);
+        else { w.status = 'unmatched'; align.leading.push(w); }
+      });
 
-      return { allBeats, leftoverWords: [], consumedCount: N };
+      // Is an extra run a retake / repeat of some beat?
+      align.extraRuns.forEach(r => {
+        const runSet = contentSet(words.slice(r.from, r.to).map(w => w.norm));
+        let best = -1, bestOv = 0;
+        allBeats.forEach(b => {
+          const ov = overlapRatio(runSet, b.content);
+          if (ov > bestOv) { bestOv = ov; best = b.beatIndex; }
+        });
+        if (runSet.size >= 2 && bestOv >= 0.6) r.retakeOf = best;
+      });
+
+      return align;
     }
 
-    // Allows user to manually shift a boundary word between adjacent beats in the Inspector
-    function nudgeBeatBoundary(beatIndex, direction) {
-      if (!currentAlignedSectionsState) return;
-      const allBeats = [];
-      currentAlignedSectionsState.forEach(sec => sec.beats.forEach(b => allBeats.push(b)));
+    // Per-beat match quality (recomputed after manual nudges)
+    function computeBeatStats(beat, align) {
+      const inBeat = new Set(beat.matchedWords);
+      const marks = [];
+      let need = 0, ok = 0;
+      beat.expectedTokens.forEach(t => {
+        const wi = align.tokWord[t.globalIdx];
+        const w = wi >= 0 ? align.words[wi] : null;
+        if (t.isOptionalCurrencyUnit) {
+          if (w && inBeat.has(w)) marks.push({ raw: t.raw, state: 'ok' });
+          return;
+        }
+        need++;
+        if (w && inBeat.has(w)) {
+          if (w.status === 'match') { ok++; marks.push({ raw: t.raw, state: 'ok' }); }
+          else marks.push({ raw: t.raw, state: 'sub', heard: w.word });
+        } else {
+          marks.push({ raw: t.raw, state: 'miss' });
+        }
+      });
+      const extra = beat.matchedWords.filter(w => w.status === 'ins' && !w.isFiller).length;
+      const coverage = need ? ok / need : 0;
+      let status;
+      if (!need) status = 'empty';
+      else if (!beat.matchedWords.length) status = 'missing';
+      else if (coverage < 0.5) status = 'poor';
+      else if (coverage < 0.85 || extra >= 3) status = 'partial';
+      else status = 'ok';
+      return { need, ok, coverage, marks, extra, status };
+    }
 
+    /* =========================================================================
+       MANUAL FINE-TUNING
+       ========================================================================= */
+    function nudgeBeatBoundary(beatIndex, direction) {
+      const al = state.alignment;
+      if (!al) return;
+      const allBeats = al.allBeats;
       const currentBeat = allBeats[beatIndex];
       if (!currentBeat) return;
 
       if (direction === 'first_to_prev' && beatIndex > 0) {
-        if (currentBeat.matchedWords.length === 0) return;
+        if (!currentBeat.matchedWords.length) return;
         const word = currentBeat.matchedWords.shift();
         allBeats[beatIndex - 1].matchedWords.push(word);
         showToast(`Moved "${word.word}" to ${allBeats[beatIndex - 1].key}`);
       } else if (direction === 'last_to_next' && beatIndex + 1 < allBeats.length) {
-        if (currentBeat.matchedWords.length === 0) return;
+        if (!currentBeat.matchedWords.length) return;
         const word = currentBeat.matchedWords.pop();
         allBeats[beatIndex + 1].matchedWords.unshift(word);
         showToast(`Moved "${word.word}" to ${allBeats[beatIndex + 1].key}`);
       } else if (direction === 'pull_from_prev' && beatIndex > 0) {
         const prevBeat = allBeats[beatIndex - 1];
-        if (prevBeat.matchedWords.length === 0) return;
+        if (!prevBeat.matchedWords.length) return;
         const word = prevBeat.matchedWords.pop();
         currentBeat.matchedWords.unshift(word);
         showToast(`Pulled "${word.word}" into ${currentBeat.key}`);
       } else if (direction === 'pull_from_next' && beatIndex + 1 < allBeats.length) {
         const nextBeat = allBeats[beatIndex + 1];
-        if (nextBeat.matchedWords.length === 0) return;
+        if (!nextBeat.matchedWords.length) return;
         const word = nextBeat.matchedWords.shift();
         currentBeat.matchedWords.push(word);
         showToast(`Pulled "${word.word}" into ${currentBeat.key}`);
+      } else {
+        showToast('Nothing to move in that direction', 'warn');
+        return;
       }
-
       renderOutputFromCurrentState();
+    }
+
+    function moveUnmatched(which) {
+      const al = state.alignment;
+      if (!al || !al.allBeats.length) return;
+      if (which === 'leading' && al.leading.length) {
+        const target = al.allBeats.find(b => b.matchedWords.length) || al.allBeats[0];
+        target.matchedWords.unshift(...al.leading);
+        showToast(`Moved ${al.leading.length} word(s) into ${target.key}`);
+        al.leading = [];
+      } else if (which === 'trailing' && al.trailing.length) {
+        const withWords = al.allBeats.filter(b => b.matchedWords.length);
+        const target = withWords[withWords.length - 1] || al.allBeats[al.allBeats.length - 1];
+        target.matchedWords.push(...al.trailing);
+        showToast(`Moved ${al.trailing.length} word(s) into ${target.key}`);
+        al.trailing = [];
+      }
+      renderOutputFromCurrentState();
+    }
+
+    function focusBeat(beatIndex) {
+      switchOutputTab('inspector');
+      const el = $(`beat-card-${beatIndex}`);
+      if (!el) return;
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      el.classList.add('beat-flash');
+      setTimeout(() => el.classList.remove('beat-flash'), 1600);
     }
 
     /* =========================================================================
        MAIN CONVERSION & RECOMMENDED STRUCTURE GENERATOR
        ========================================================================= */
     function runConversion(recomputeAlignment = true) {
-      const transcriptWords = extractTranscriptWords();
-
-      if (recomputeAlignment || !currentAlignedSectionsState) {
-        const sections = parseScriptStructure();
-        const { leftoverWords } = alignWordsToBeats(sections, transcriptWords);
-        currentAlignedSectionsState = sections;
-        currentLeftoverWordsState = leftoverWords;
+      if (recomputeAlignment || !state.alignment) {
+        const tx = extractTranscriptWords();
+        state.transcriptNotes = tx.notes;
+        const sc = parseScriptStructure();
+        state.scriptNotes = sc.notes;
+        state.sections = sc.sections;
+        try {
+          state.alignment = alignWordsToBeats(sc.sections, tx.words);
+        } catch (err) {
+          console.error(err);
+          state.alignment = { allBeats: [], words: tx.words, scriptTokens: [], leading: tx.words.slice(), trailing: [], extraRuns: [], tokWord: new Int32Array(0),
+            notes: [{ level: 'error', title: 'Alignment failed unexpectedly', detail: String(err && err.message || err) }] };
+        }
       }
-
-      renderOutputFromCurrentState(transcriptWords.length);
+      renderOutputFromCurrentState();
     }
 
-    function renderOutputFromCurrentState(totalTransWordsOverride = null) {
-      const sections = currentAlignedSectionsState || [];
-      const leftoverWords = currentLeftoverWordsState || [];
-      const layoutStyle = document.getElementById('outputLayoutStyle').value;
-      const hideEmptyBeats = document.getElementById('hideEmptyBeatsToggle')?.checked ?? true;
-      const includeUnmatched = document.getElementById('includeUnmatchedToggle').checked;
+    const fmtWordLine = (w) => `${w.word}|${w.start}|${w.end}`;
 
-      let totalBeatsCount = 0;
-      let consumedCount = 0;
-      sections.forEach(s => {
-        totalBeatsCount += s.beats.length;
-        s.beats.forEach(b => { consumedCount += b.matchedWords.length; });
-      });
+    function renderOutputFromCurrentState() {
+      const al = state.alignment || { allBeats: [], words: [], leading: [], trailing: [], extraRuns: [], notes: [] };
+      const sections = state.sections || [];
+      const layoutStyle = $('outputLayoutStyle').value;
+      const hideEmptyBeats = $('hideEmptyBeatsToggle')?.checked ?? true;
+      const includeUnmatched = $('includeUnmatchedToggle').checked;
+      const words = al.words;
 
-      const totalTransWords = totalTransWordsOverride !== null ? totalTransWordsOverride : consumedCount + leftoverWords.length;
+      al.allBeats.forEach(b => { b.stats = computeBeatStats(b, al); });
 
-      // Update Header Stats
-      document.getElementById('scriptStatsBadge').textContent = `${sections.length} Sec · ${totalBeatsCount} Beats`;
-      document.getElementById('transcriptStatsBadge').textContent = `${totalTransWords} Words`;
+      $('scriptStatsBadge').textContent = `${sections.length} Sec · ${al.allBeats.length} Beats`;
+      $('transcriptStatsBadge').textContent = `${words.length} Words`;
 
-      // Build Recommended Structure Output
       const outLines = [];
+      const pushBlock = (key, list) => {
+        if (outLines.length) outLines.push('');
+        if (layoutStyle === 'recommended') {
+          outLines.push(`### ${key}`);
+          list.forEach(w => outLines.push(fmtWordLine(w)));
+        } else {
+          outLines.push(`${key} | ${list.map(fmtWordLine).join(' ')}`);
+        }
+      };
 
-      if (sections.length === 0 && totalTransWords > 0) {
-        const transcriptWords = extractTranscriptWords();
-        outLines.push('## 0. Transcript');
-        outLines.push('');
-        outLines.push('### «1»');
-        transcriptWords.forEach(w => {
-          outLines.push(`${w.word}|${w.start}|${w.end}`);
-        });
+      if (!al.allBeats.length) {
+        if (words.length) {
+          outLines.push('## 0. Transcript');
+          outLines.push('');
+          outLines.push('### «1»');
+          words.forEach(w => outLines.push(fmtWordLine(w)));
+        }
       } else {
-        sections.forEach((sec) => {
-          const visibleBeats = hideEmptyBeats
-            ? sec.beats.filter(b => b.matchedWords.length > 0)
-            : sec.beats;
-
-          if (visibleBeats.length === 0 && hideEmptyBeats) return;
-
-          if (outLines.length > 0) outLines.push('');
+        if (includeUnmatched && al.leading.length) pushBlock('«UNMATCHED_LEADING»', al.leading);
+        sections.forEach(sec => {
+          const visibleBeats = hideEmptyBeats ? sec.beats.filter(b => b.matchedWords.length > 0) : sec.beats;
+          if (!visibleBeats.length && hideEmptyBeats) return;
+          if (outLines.length) outLines.push('');
           outLines.push(`## ${sec.title}`);
-
           visibleBeats.forEach(beat => {
             if (layoutStyle === 'recommended') {
               outLines.push('');
               outLines.push(`### ${beat.key}`);
-              if (beat.matchedWords.length > 0) {
-                beat.matchedWords.forEach(w => {
-                  outLines.push(`${w.word}|${w.start}|${w.end}`);
-                });
-              }
+              beat.matchedWords.forEach(w => outLines.push(fmtWordLine(w)));
             } else {
-              // Compact Single-Line per Beat
-              const joinedWords = beat.matchedWords.map(w => `${w.word}|${w.start}|${w.end}`).join(' ');
-              outLines.push(`${beat.key} | ${joinedWords}`);
+              outLines.push(`${beat.key} | ${beat.matchedWords.map(fmtWordLine).join(' ')}`);
             }
           });
         });
-
-        if (includeUnmatched && leftoverWords.length > 0) {
-          outLines.push('');
-          outLines.push('### «UNMATCHED_TRAILING»');
-          leftoverWords.forEach(w => {
-            outLines.push(`${w.word}|${w.start}|${w.end}`);
-          });
-        }
+        if (includeUnmatched && al.trailing.length) pushBlock('«UNMATCHED_TRAILING»', al.trailing);
       }
 
       const finalOutput = outLines.join('\n').trim();
-      document.getElementById('outputTextarea').value = finalOutput;
+      $('outputTextarea').value = finalOutput;
 
-      // Render Alignment Inspector
-      renderAlignmentInspector(sections, totalTransWords, consumedCount, leftoverWords);
-
-      // Calculate Context Token Savings
-      updateCompressionTelemetry(finalOutput, consumedCount, totalTransWords);
+      const issues = buildIssues(al, includeUnmatched);
+      renderAlignmentInspector(sections, al);
+      renderIssues(issues);
+      updateBanner(issues);
+      updateCompressionTelemetry(finalOutput, al, issues);
     }
 
-    function renderAlignmentInspector(sections, totalTransWords, consumedCount, leftoverWords) {
-      const container = document.getElementById('outputInspectorContainer');
+    /* =========================================================================
+       ISSUES / DIAGNOSTICS
+       ========================================================================= */
+    function describeBeatDifferences(beat) {
+      const miss = beat.stats.marks.filter(m => m.state === 'miss').map(m => m.raw);
+      const subs = beat.stats.marks.filter(m => m.state === 'sub');
+      const extra = beat.matchedWords.filter(w => w.status === 'ins' && !w.isFiller).map(w => w.word);
+      const parts = [];
+      if (miss.length) parts.push(`Not heard: "${shorten(miss.join(' '), 80)}"`);
+      if (subs.length) parts.push(`Heard differently: ${subs.slice(0, 4).map(s => `"${s.heard}" for "${s.raw}"`).join(', ')}${subs.length > 4 ? ' …' : ''}`);
+      if (extra.length) parts.push(`Extra spoken: "${shorten(extra.join(' '), 60)}"`);
+      return parts.join(' · ');
+    }
+
+    function buildIssues(al, includeUnmatched) {
+      const issues = [];
+      const add = (level, title, detail = '', beatIndex = null) => issues.push({ level, title, detail, beatIndex });
+      [...(state.schemaNotes || []), ...(state.transcriptNotes || []), ...(state.scriptNotes || []), ...(al.notes || [])]
+        .forEach(n => issues.push({ beatIndex: null, detail: '', ...n }));
+
+      const beats = al.allBeats;
+      const words = al.words;
+      const N = words.length;
+      const scriptHasText = $('scriptInput').value.trim().length > 0;
+
+      if (!N && !scriptHasText) return issues;
+      if (!N && !issues.some(i => i.level === 'error') && $('transcriptInput').value.trim() === '') {
+        add('info', 'Paste a word-by-word transcript to start aligning');
+      }
+      if (!beats.length || !N || !al.scriptTokens.length) return sortIssues(issues);
+
+      const matched = words.filter(w => w.status === 'match').length;
+      const rate = matched / N;
+      if (rate < 0.3) {
+        add('error', `Script and transcript barely match — only ${Math.round(rate * 100)}% of spoken words were found in the script`,
+          'Check that this transcript is the recording of this script, and that the correct "Word Variable" is selected in the Schema Mapper.');
+      }
+
+      const covered = beats.filter(b => b.matchedWords.length > 0);
+      if (!covered.length) {
+        add('error', 'No beat could be matched to the transcript');
+        return sortIssues(issues);
+      }
+      const firstIdx = covered[0].beatIndex;
+      const lastIdx = covered[covered.length - 1].beatIndex;
+      const firstStart = covered[0].matchedWords[0].s;
+      const lastEnd = covered[covered.length - 1].matchedWords[covered[covered.length - 1].matchedWords.length - 1].e;
+      const keyRange = (a, b) => (a === b ? beats[a].key : `${beats[a].key}–${beats[b].key}`);
+
+      // Beats before / after the part the transcript covers
+      const textBeats = (from, to) => beats.slice(from, to + 1).filter(b => b.stats.status !== 'empty');
+      if (firstIdx > 0) {
+        const before = textBeats(0, firstIdx - 1);
+        if (before.length && before.length <= 2) {
+          before.forEach(b => add('warn', `${b.key} was not found at the start of the transcript`,
+            `The transcript begins with ${beats[firstIdx].key} at ${fmtClock(firstStart)}. The speaker may have skipped this line, or the recording starts later. Script: "${shorten(b.scriptLine)}"`, b.beatIndex));
+        } else if (before.length) {
+          add('info', `Transcript starts at ${beats[firstIdx].key} — beats ${keyRange(before[0].beatIndex, before[before.length - 1].beatIndex)} are not in this transcript`,
+            'Fine if you pasted a partial transcript. Otherwise those beats were not recorded.');
+        }
+      }
+      if (lastIdx < beats.length - 1) {
+        const after = textBeats(lastIdx + 1, beats.length - 1);
+        if (after.length && after.length <= 2) {
+          after.forEach(b => add('warn', `${b.key} was not found at the end of the transcript`,
+            `The transcript ends with ${beats[lastIdx].key} at ${fmtClock(lastEnd)}. Script: "${shorten(b.scriptLine)}"`, b.beatIndex));
+        } else if (after.length) {
+          add('info', `Transcript ends at ${beats[lastIdx].key} — ${after.length} later beats (${keyRange(after[0].beatIndex, after[after.length - 1].beatIndex)}) have no audio`,
+            'Fine if you pasted a partial transcript. Otherwise those beats were not recorded.');
+        }
+      }
+
+      // A transcript that starts / stops part-way through a beat (partial paste)
+      const cutAtEdge = (b) => {
+        const marks = b.stats.marks;
+        const firstHit = marks.findIndex(m => m.state !== 'miss');
+        let lastHit = -1;
+        marks.forEach((m, k) => { if (m.state !== 'miss') lastHit = k; });
+        if (firstHit < 0) return null;
+        const inner = marks.slice(firstHit, lastHit + 1).filter(m => m.state === 'miss').length;
+        if (inner > 1) return null;
+        if (b.beatIndex === lastIdx && lastHit < marks.length - 1 && firstHit === 0) return 'end';
+        if (b.beatIndex === firstIdx && firstHit > 0 && lastHit === marks.length - 1) return 'start';
+        return null;
+      };
+      const extraRunBeats = new Set(al.extraRuns.map(r => beats.findIndex(bb => bb.matchedWords.includes(words[r.from]))));
+
+      // Beats inside the covered range
+      const partials = [];
+      beats.forEach(b => {
+        if (b.beatIndex < firstIdx || b.beatIndex > lastIdx) return;
+        const st = b.stats;
+        if ((st.status === 'poor' || st.status === 'partial') && (b.beatIndex === firstIdx || b.beatIndex === lastIdx)) {
+          const edge = cutAtEdge(b);
+          if (edge) {
+            add('info', edge === 'end'
+              ? `Transcript stops part-way through ${b.key} (${Math.round(st.coverage * 100)}% of it spoken)`
+              : `Transcript starts part-way through ${b.key} (${Math.round(st.coverage * 100)}% of it spoken)`,
+              'Fine if you pasted a partial transcript. Otherwise the recording or the JSON is cut off.', b.beatIndex);
+            return;
+          }
+        }
+        if (st.status === 'missing') {
+          let prevEnd = null, nextStart = null;
+          for (let k = b.beatIndex - 1; k >= 0; k--) if (beats[k].matchedWords.length) { const mw = beats[k].matchedWords; prevEnd = mw[mw.length - 1].e; break; }
+          for (let k = b.beatIndex + 1; k < beats.length; k++) if (beats[k].matchedWords.length) { nextStart = beats[k].matchedWords[0].s; break; }
+          let hint = 'The speaker may have skipped or completely reworded this line.';
+          const similar = al.extraRuns.find(r => r.retakeOf === b.beatIndex);
+          if (similar) hint = `Similar words were spoken at ${fmtClock(words[similar.from].s)}–${fmtClock(words[similar.to - 1].e)} — possibly said out of order.`;
+          const window = (prevEnd !== null && nextStart !== null && Math.abs(nextStart - prevEnd) < 0.75)
+            ? `Expected around ${fmtClock(prevEnd)}, but the speaker went straight from the previous beat to the next one.`
+            : `Expected between ${fmtClock(prevEnd)} and ${fmtClock(nextStart)}.`;
+          add('warn', `${b.key} was not found in the transcript`,
+            `${window} ${hint} Script: "${shorten(b.scriptLine)}"`, b.beatIndex);
+        } else if (st.status === 'poor') {
+          add('warn', `${b.key} only partly matches the script (${Math.round(st.coverage * 100)}%)`, describeBeatDifferences(b), b.beatIndex);
+        } else if (st.status === 'partial') {
+          partials.push(b);
+        }
+      });
+      partials.forEach(b => {
+        if (b.stats.coverage < 0.85) {
+          add('info', `${b.key} has small differences (${Math.round(b.stats.coverage * 100)}% match)`, describeBeatDifferences(b), b.beatIndex);
+        } else if (!extraRunBeats.has(b.beatIndex)) {
+          add('info', `${b.key} has ${b.stats.extra} extra spoken word(s) not in the script`, describeBeatDifferences(b), b.beatIndex);
+        }
+      });
+
+      // Extra speech that is not in the script
+      al.extraRuns.forEach(r => {
+        const runWords = words.slice(r.from, r.to);
+        const owner = beats.find(b => b.matchedWords.includes(runWords[0]));
+        const span = `${fmtClock(runWords[0].s)}–${fmtClock(runWords[runWords.length - 1].e)}`;
+        if (r.kind === 'reworded') {
+          add('warn', `${beats[r.target].key} seems reworded — matched to different spoken words (${span})`,
+            `Spoken: "${wordsText(runWords)}". Script: "${shorten(beats[r.target].scriptLine)}". Please verify in Alignment Check.`, r.target);
+          return;
+        }
+        let hint = '';
+        if (r.retakeOf !== undefined && r.retakeOf >= 0) hint = ` Looks like a repeat / retake of ${beats[r.retakeOf].key}.`;
+        add('warn', `Extra speech not in the script (${span})`,
+          `"${wordsText(runWords)}" — kept inside ${owner ? owner.key : 'the nearest beat'}.${hint}`, owner ? owner.beatIndex : null);
+      });
+
+      const where = includeUnmatched ? 'kept in the output' : 'left out of the output ("Unmatched words" is off)';
+      if (al.leading.length) {
+        add('warn', `${al.leading.length} spoken word(s) before the script starts (${fmtClock(al.leading[0].s)}–${fmtClock(al.leading[al.leading.length - 1].e)})`,
+          `"${wordsText(al.leading)}" — ${where} as «UNMATCHED_LEADING». Use Alignment Check to move them into the first beat if they belong there.`);
+      }
+      if (al.trailing.length) {
+        add('warn', `${al.trailing.length} spoken word(s) after the script ends (${fmtClock(al.trailing[0].s)}–${fmtClock(al.trailing[al.trailing.length - 1].e)})`,
+          `"${wordsText(al.trailing)}" — ${where} as «UNMATCHED_TRAILING».`);
+      }
+      return sortIssues(issues);
+    }
+
+    function sortIssues(issues) {
+      const rank = { error: 0, warn: 1, info: 2 };
+      return issues.map((x, i) => ({ x, i })).sort((a, b) => (rank[a.x.level] - rank[b.x.level]) || (a.i - b.i)).map(o => o.x);
+    }
+
+    const ISSUE_STYLE = {
+      error: { icon: 'fa-circle-xmark text-rose-400', box: 'border-rose-500/40 bg-rose-500/10', label: 'Error' },
+      warn: { icon: 'fa-triangle-exclamation text-amber-400', box: 'border-amber-500/30 bg-amber-500/5', label: 'Warning' },
+      info: { icon: 'fa-circle-info text-cyan-400', box: 'border-slate-700 bg-slate-900', label: 'Note' }
+    };
+
+    function renderIssues(issues) {
+      const count = { error: 0, warn: 0, info: 0 };
+      issues.forEach(i => { count[i.level]++; });
+      const badge = $('issuesCountBadge');
+      badge.textContent = count.error + count.warn;
+      badge.className = 'ml-0.5 px-1.5 rounded-full text-[10px] ' + (count.error ? 'bg-rose-600 text-white' : count.warn ? 'bg-amber-500 text-slate-950' : 'bg-slate-700 text-slate-200');
+
       let html = `
-        <div class="px-2.5 py-2 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-300 flex items-center justify-between">
+        <div class="px-2.5 py-2 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-300 flex flex-wrap items-center gap-3">
+          <span class="font-semibold text-slate-200"><i class="fa-solid fa-stethoscope text-emerald-400 mr-1.5"></i>Script ↔ Transcript check</span>
+          <span class="text-rose-300">${count.error} error(s)</span>
+          <span class="text-amber-300">${count.warn} warning(s)</span>
+          <span class="text-cyan-300">${count.info} note(s)</span>
+        </div>`;
+      if (!issues.length) {
+        html += `<div class="px-3 py-6 text-center text-xs text-emerald-300"><i class="fa-solid fa-circle-check mr-1.5"></i>No problems found — every beat matches the transcript.</div>`;
+      }
+      issues.forEach(issue => {
+        const st = ISSUE_STYLE[issue.level] || ISSUE_STYLE.info;
+        const clickable = issue.beatIndex !== null && issue.beatIndex !== undefined;
+        html += `
+          <div ${clickable ? `onclick="focusBeat(${issue.beatIndex})" title="Show this beat in Alignment Check"` : ''} class="px-3 py-2 rounded-lg border ${st.box} text-[11px] ${clickable ? 'cursor-pointer hover:brightness-125' : ''}">
+            <div class="flex items-start gap-2">
+              <i class="fa-solid ${st.icon} mt-0.5"></i>
+              <div class="flex-1 min-w-0">
+                <div class="font-semibold text-slate-100">${escapeHtml(issue.title)}</div>
+                ${issue.detail ? `<div class="text-slate-400 mt-0.5 break-words">${escapeHtml(issue.detail)}</div>` : ''}
+              </div>
+              ${clickable ? '<i class="fa-solid fa-arrow-right text-slate-500 mt-0.5"></i>' : ''}
+            </div>
+          </div>`;
+      });
+      $('outputIssuesContainer').innerHTML = html;
+    }
+
+    function updateBanner(issues) {
+      const banner = $('schemaAlertBanner');
+      const icon = $('schemaAlertIcon');
+      const text = $('schemaAlertText');
+      const firstError = issues.find(i => i.level === 'error');
+      if (firstError) {
+        banner.className = 'bg-rose-500/10 border-b border-rose-500/30 px-4 py-2 flex items-center justify-between gap-3 text-xs text-rose-200 shrink-0';
+        icon.className = 'fa-solid fa-circle-xmark text-rose-400';
+        const more = issues.filter(i => i.level === 'error').length - 1;
+        text.textContent = firstError.title + (more > 0 ? ` (+${more} more)` : '');
+        $('bannerIssuesBtn').classList.remove('hidden');
+        $('bannerMapperBtn').classList.toggle('hidden', !/transcript|json|word|timestamp|mapping/i.test(firstError.title));
+      } else if (state.mappingMessage && $('transcriptInput').value.trim()) {
+        banner.className = 'bg-amber-500/10 border-b border-amber-500/30 px-4 py-2 flex items-center justify-between gap-3 text-xs text-amber-200 shrink-0';
+        icon.className = 'fa-solid fa-triangle-exclamation text-amber-400';
+        text.textContent = state.mappingMessage;
+        $('bannerIssuesBtn').classList.add('hidden');
+        $('bannerMapperBtn').classList.remove('hidden');
+      } else {
+        banner.className = 'hidden';
+      }
+    }
+
+    /* =========================================================================
+       ALIGNMENT INSPECTOR
+       ========================================================================= */
+    const BEAT_STATUS_STYLE = {
+      ok: { chip: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', label: 'Matched' },
+      partial: { chip: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30', label: 'Small differences' },
+      poor: { chip: 'bg-amber-500/15 text-amber-300 border-amber-500/30', label: 'Poor match' },
+      missing: { chip: 'bg-rose-500/15 text-rose-300 border-rose-500/30', label: 'Not found' },
+      empty: { chip: 'bg-slate-800 text-slate-500 border-slate-700', label: 'No script text' }
+    };
+
+    function wordChip(w) {
+      let cls = 'bg-slate-950 text-cyan-300 border-slate-800';
+      let title = `${w.start} – ${w.end}`;
+      if (w.status === 'sub') { cls = 'bg-amber-950/50 text-amber-300 border-amber-500/50'; title += ` · heard "${w.word}" where the script says "${w.expected}"`; }
+      else if (w.status === 'ins') { cls = w.isFiller ? 'bg-slate-950 text-slate-500 border-slate-800' : 'bg-fuchsia-950/60 text-fuchsia-300 border-fuchsia-500/60 border-dashed'; title += w.isFiller ? ' · filler word' : ' · extra word (not in script)'; }
+      else if (w.status === 'unmatched') { cls = 'bg-rose-950/50 text-rose-300 border-rose-500/50'; title += ' · not part of the script'; }
+      if (w.estimated) title += ' · timestamp estimated';
+      return `<span class="px-1.5 py-0.5 rounded border ${cls} text-[10px] font-mono ${w.estimated ? 'italic' : ''}" title="${escapeHtml(title)}">${escapeHtml(w.word)}<span class="text-slate-500">|${w.estimated ? '~' : ''}${escapeHtml(w.start)}</span></span>`;
+    }
+
+    function unmatchedCard(kind, list) {
+      if (!list.length) return '';
+      const label = kind === 'leading' ? '«UNMATCHED_LEADING» — spoken before the script starts' : '«UNMATCHED_TRAILING» — spoken after the script ends';
+      const btn = kind === 'leading' ? 'Move into first beat' : 'Move into last beat';
+      return `
+        <div class="bg-rose-950/20 border border-rose-500/30 rounded-xl p-2.5">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+            <span class="text-[11px] font-semibold text-rose-300">${label}</span>
+            <button onclick="moveUnmatched('${kind}')" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700 transition">${btn}</button>
+          </div>
+          <div class="flex flex-wrap gap-1">${list.map(wordChip).join('')}</div>
+        </div>`;
+    }
+
+    function renderAlignmentInspector(sections, al) {
+      const container = $('outputInspectorContainer');
+      let html = `
+        <div class="px-2.5 py-2 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-300 flex flex-wrap items-center justify-between gap-2">
           <span><i class="fa-solid fa-sliders text-emerald-400 mr-1.5"></i>Verify or fine-tune word boundaries per beat</span>
           <button onclick="runConversion(true)" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 transition">
             <i class="fa-solid fa-rotate-right mr-1"></i>Reset Auto-Align
           </button>
         </div>
-      `;
+        <div class="px-2.5 text-[10px] text-slate-500 flex flex-wrap gap-x-3 gap-y-1">
+          <span><span class="text-cyan-300">■</span> matched</span>
+          <span><span class="text-amber-300">■</span> heard differently</span>
+          <span><span class="text-fuchsia-300">■</span> extra (not in script)</span>
+          <span><span class="text-rose-300 line-through">abc</span> script word not heard</span>
+          <span class="italic">~ estimated time</span>
+        </div>`;
+
+      html += unmatchedCard('leading', al.leading || []);
 
       sections.forEach(sec => {
+        const problems = sec.beats.filter(b => b.stats && ['missing', 'poor'].includes(b.stats.status)).length;
         html += `
           <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
             <div class="px-3 py-2 bg-slate-800/70 border-b border-slate-800 text-xs font-bold text-emerald-400 flex items-center justify-between">
               <span>## ${escapeHtml(sec.title)}</span>
-              <span class="text-[10px] text-slate-400 font-normal">${sec.beats.length} beats</span>
+              <span class="text-[10px] font-normal ${problems ? 'text-amber-300' : 'text-slate-400'}">${sec.beats.length} beats${problems ? ` · ${problems} need review` : ''}</span>
             </div>
-            <div class="divide-y divide-slate-800/60 p-2 space-y-2">
-        `;
+            <div class="divide-y divide-slate-800/60 p-2 space-y-2">`;
 
         sec.beats.forEach(beat => {
+          const st = beat.stats || { status: 'missing', marks: [], coverage: 0 };
+          const style = BEAT_STATUS_STYLE[st.status];
           const hasWords = beat.matchedWords.length > 0;
           const firstTime = hasWords ? beat.matchedWords[0].start : '—';
           const lastTime = hasWords ? beat.matchedWords[beat.matchedWords.length - 1].end : '—';
-
-          // Check boundary confidence (do first & last words match expected beat start/end?)
-          let isExactBoundary = false;
-          if (hasWords && beat.expectedTokens.length > 0) {
-            const firstMatch = tokenSimilarityScore(
-              beat.expectedTokens[0].norm,
-              normalizeToken(beat.matchedWords[0].word)
-            ) > 0;
-            const lastExp = beat.expectedTokens[beat.expectedTokens.length - 1].norm;
-            const lastMatch = tokenSimilarityScore(
-              lastExp,
-              normalizeToken(beat.matchedWords[beat.matchedWords.length - 1].word)
-            ) > 0;
-            isExactBoundary = firstMatch && lastMatch;
-          }
-
-          const statusColor = !hasWords
-            ? 'bg-slate-800 text-slate-500 border-slate-700'
-            : isExactBoundary
-            ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-            : 'bg-amber-500/15 text-amber-300 border-amber-500/30';
-
           const bIdx = beat.beatIndex;
+          const scriptHtml = st.marks.length
+            ? st.marks.map(m => m.state === 'ok' ? escapeHtml(m.raw)
+                : m.state === 'sub' ? `<span class="text-amber-300 not-italic underline decoration-dotted" title="heard &quot;${escapeHtml(m.heard)}&quot;">${escapeHtml(m.raw)}</span>`
+                : `<span class="text-rose-300 line-through" title="not heard in the transcript">${escapeHtml(m.raw)}</span>`).join(' ')
+            : `<span class="text-slate-500">${escapeHtml(beat.scriptLine) || '(no script text)'}</span>`;
 
           html += `
-            <div class="pt-2.5 first:pt-0 px-1.5">
+            <div id="beat-card-${bIdx}" class="pt-2.5 first:pt-0 px-1.5 rounded">
               <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
-                <div class="flex items-center gap-2">
-                  <span class="px-2 py-0.5 rounded text-xs font-bold font-mono ${statusColor} border">${escapeHtml(beat.key)}</span>
-                  <span class="text-[11px] text-slate-400 font-mono">${firstTime} ➔ ${lastTime}</span>
-                  ${hasWords ? `<span class="text-[10px] px-1.5 py-0.2 rounded ${isExactBoundary ? 'text-emerald-400 bg-emerald-950/60' : 'text-amber-300 bg-amber-950/60'}">${beat.matchedWords.length} words</span>` : ''}
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="px-2 py-0.5 rounded text-xs font-bold font-mono ${style.chip} border" title="${style.label}">${escapeHtml(beat.key)}</span>
+                  <span class="text-[11px] text-slate-400 font-mono">${escapeHtml(firstTime)} ➔ ${escapeHtml(lastTime)}</span>
+                  <span class="text-[10px] px-1.5 rounded ${style.chip} border">${st.status === 'partial' && st.coverage >= 0.85 ? `${st.extra} extra word(s)` : style.label}${st.status !== 'empty' && st.status !== 'missing' ? ` · ${Math.round(st.coverage * 100)}%` : ''}</span>
+                  ${hasWords ? `<span class="text-[10px] text-slate-500">${beat.matchedWords.length} words</span>` : ''}
                 </div>
-                <!-- Manual Boundary Micro-Adjust Buttons -->
                 <div class="flex items-center gap-1">
-                  <button onclick="nudgeBeatBoundary(${bIdx}, 'first_to_prev')" title="Send 1st word to previous beat" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700 transition">
-                    ⬅ 1st
-                  </button>
-                  <button onclick="nudgeBeatBoundary(${bIdx}, 'pull_from_prev')" title="Pull last word from previous beat" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700 transition">
-                    +Prev
-                  </button>
-                  <button onclick="nudgeBeatBoundary(${bIdx}, 'pull_from_next')" title="Pull 1st word from next beat" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700 transition">
-                    +Next
-                  </button>
-                  <button onclick="nudgeBeatBoundary(${bIdx}, 'last_to_next')" title="Send last word to next beat" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700 transition">
-                    Last ➡
-                  </button>
+                  <button onclick="nudgeBeatBoundary(${bIdx}, 'first_to_prev')" title="Send 1st word to previous beat" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700 transition">⬅ 1st</button>
+                  <button onclick="nudgeBeatBoundary(${bIdx}, 'pull_from_prev')" title="Pull last word from previous beat" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700 transition">+Prev</button>
+                  <button onclick="nudgeBeatBoundary(${bIdx}, 'pull_from_next')" title="Pull 1st word from next beat" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700 transition">+Next</button>
+                  <button onclick="nudgeBeatBoundary(${bIdx}, 'last_to_next')" title="Send last word to next beat" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700 transition">Last ➡</button>
                 </div>
               </div>
-              <div class="text-[11px] text-slate-300 mb-1.5 italic bg-slate-950/60 px-2 py-1 rounded border border-slate-800/80">"${escapeHtml(beat.scriptLine)}"</div>
+              <div class="text-[11px] text-slate-300 mb-1.5 italic bg-slate-950/60 px-2 py-1 rounded border border-slate-800/80">"${scriptHtml}"</div>
               <div class="flex flex-wrap gap-1">
-                ${beat.matchedWords.map(w => `
-                  <span class="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800 text-[10px] font-mono text-cyan-300" title="${w.start} - ${w.end}">
-                    ${escapeHtml(w.word)}<span class="text-slate-500">|${w.start}</span>
-                  </span>
-                `).join('')}
+                ${beat.matchedWords.map(wordChip).join('')}
                 ${!hasWords ? `<span class="text-[10px] text-slate-500">No transcript words in range for this beat</span>` : ''}
               </div>
-            </div>
-          `;
+            </div>`;
         });
-
         html += `</div></div>`;
       });
 
+      html += unmatchedCard('trailing', al.trailing || []);
+      const scrollTop = container.scrollTop;
       container.innerHTML = html;
-    }
-
-    function updateCompressionTelemetry(finalOutput, consumedCount, totalTransWords) {
-      const rawScriptLen = document.getElementById('scriptInput').value.length;
-      const rawTransLen = document.getElementById('transcriptInput').value.length;
-      const totalRawChars = rawScriptLen + rawTransLen;
-      const outChars = finalOutput.length;
-
-      const savedPct = totalRawChars > 0
-        ? Math.max(0, Math.round((1 - (outChars / totalRawChars)) * 100))
-        : 0;
-
-      const rawTokensEst = Math.round(totalRawChars / 4);
-      const outTokensEst = Math.round(outChars / 4);
-
-      document.getElementById('compressionRatioBadge').textContent = `${savedPct}% Context Saved`;
-      document.getElementById('tokenCountCompare').textContent = `~${rawTokensEst.toLocaleString()} ➔ ~${outTokensEst.toLocaleString()} tokens`;
-
-      const healthEl = document.getElementById('alignmentHealthBadge');
-      if (totalTransWords === 0) {
-        healthEl.innerHTML = `<i class="fa-solid fa-circle-minus text-slate-500"></i><span>Awaiting Transcript</span>`;
-      } else if (consumedCount === totalTransWords) {
-        healthEl.innerHTML = `<i class="fa-solid fa-check-double text-emerald-400"></i><span>100% Words Aligned (${consumedCount}/${totalTransWords})</span>`;
-      } else {
-        healthEl.innerHTML = `<i class="fa-solid fa-circle-info text-cyan-400"></i><span>Aligned ${consumedCount}/${totalTransWords} words</span>`;
-      }
-    }
-
-    function escapeHtml(str) {
-      return String(str || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+      container.scrollTop = scrollTop;
     }
 
     /* =========================================================================
-       SCENARIO LOADER (Tests Standard JSON, Renamed Keys, Combined Var, Tuples)
+       TELEMETRY
+       ========================================================================= */
+    function updateCompressionTelemetry(finalOutput, al, issues) {
+      const totalRawChars = $('scriptInput').value.length + $('transcriptInput').value.length;
+      const outChars = finalOutput.length;
+      const savedPct = totalRawChars > 0 ? Math.max(0, Math.round((1 - outChars / totalRawChars) * 100)) : 0;
+
+      $('compressionRatioBadge').textContent = `${savedPct}% Context Saved`;
+      $('tokenCountCompare').textContent = `~${Math.round(totalRawChars / 4).toLocaleString()} ➔ ~${Math.round(outChars / 4).toLocaleString()} est. tokens`;
+
+      const healthEl = $('alignmentHealthBadge');
+      const errors = issues.filter(i => i.level === 'error').length;
+      const warns = issues.filter(i => i.level === 'warn').length;
+      const N = al.words.length;
+      if (errors) {
+        healthEl.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-400"></i><span class="text-rose-300">${errors} error(s) — click to see</span>`;
+        return;
+      }
+      if (!N) {
+        healthEl.innerHTML = `<i class="fa-solid fa-circle-minus text-slate-500"></i><span>Awaiting Transcript</span>`;
+        return;
+      }
+      const beats = al.allBeats.filter(b => b.stats && b.stats.status !== 'empty');
+      const found = beats.filter(b => b.matchedWords.length > 0).length;
+      const matchPct = Math.round(al.words.filter(w => w.status === 'match').length / N * 100);
+      const summary = beats.length ? `${found}/${beats.length} beats · ${matchPct}% words match script` : `${N} words`;
+      if (warns) {
+        healthEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-400"></i><span>${summary} · <span class="text-amber-300">${warns} warning(s)</span></span>`;
+      } else {
+        healthEl.innerHTML = `<i class="fa-solid fa-check-double text-emerald-400"></i><span>${summary}</span>`;
+      }
+    }
+
+    /* =========================================================================
+       EXTRA SAMPLE SCENARIOS (built from the Crumbl sample above)
+       ========================================================================= */
+    // Number of transcript words per beat in SAMPLE_WORDS_LIST
+    const SAMPLE_BEAT_WORD_COUNTS = [14, 15, 10, 10, 9, 9, 6, 5, 10, 11, 21, 13];
+    const r3 = (n) => Math.round(n * 1000) / 1000;
+
+    function sampleWordsInSeconds() {
+      return SAMPLE_WORDS_LIST.map(w => ({ word: w.word, start: parseTimeToSeconds(w.start_time), end: parseTimeToSeconds(w.end_time) }));
+    }
+
+    function groupSampleByBeat() {
+      const words = sampleWordsInSeconds();
+      const groups = [];
+      let i = 0;
+      SAMPLE_BEAT_WORD_COUNTS.forEach(c => { groups.push(words.slice(i, i + c)); i += c; });
+      return groups;
+    }
+
+    function buildMessyTake() {
+      const groups = groupSampleByBeat();
+      const seq = [];
+      const add = (word, dur, extra = {}) => seq.push({ word, dur, ...extra });
+      ['Hey', 'guys,', 'welcome', 'back', 'to', 'the', 'channel.'].forEach(w => add(w, 0.3));
+      groups.forEach((g, bi) => {
+        if (bi === 3) return; // beat «4» skipped by the speaker
+        if (bi === 6) ['It', 'took', 'less', 'than,', 'uh,', 'sorry.'].forEach(w => add(w, 0.3)); // false start of «7»
+        g.forEach(w => add(w.word, w.end - w.start, w.word === '2025,' ? { noTime: true } : {}));
+      });
+      ['Make', 'sure', 'to', 'subscribe', 'for', 'more.'].forEach(w => add(w, 0.3));
+      let t = 0;
+      return seq.map(x => {
+        const o = { word: x.word, start: x.noTime ? null : r3(t), end: x.noTime ? null : r3(t + x.dur), confidence: 0.9 };
+        t += x.dur + 0.02;
+        return o;
+      });
+    }
+
+    function fmtSrtTime(sec) {
+      const ms = Math.round(sec * 1000);
+      const h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, s = Math.floor(ms / 1000) % 60, r = ms % 1000;
+      const p = (n, l = 2) => String(n).padStart(l, '0');
+      return `${p(h)}:${p(m)}:${p(s)},${p(r, 3)}`;
+    }
+
+    /* =========================================================================
+       SCENARIO LOADER
        ========================================================================= */
     function loadScenario(scenarioKey) {
-      document.getElementById('scriptInput').value = CRUMBL_SCRIPT_SAMPLE;
+      $('scriptInput').value = CRUMBL_SCRIPT_SAMPLE;
+      let transcript = '';
+      let msg = '';
 
       if (scenarioKey === 'crumbl_standard') {
-        const jsonObj = { words: SAMPLE_WORDS_LIST };
-        document.getElementById('transcriptInput').value = JSON.stringify(jsonObj, null, 2);
-        showToast('Loaded Standard Crumbl Script + Word JSON');
+        transcript = JSON.stringify({ words: SAMPLE_WORDS_LIST }, null, 2);
+        msg = 'Loaded Standard Crumbl Script + Word JSON';
       } else if (scenarioKey === 'renamed_keys') {
-        // Simulate a transcript tool that uses totally different key names: `items`, `token_text`, `t_in`, `t_out`
-        const renamedList = SAMPLE_WORDS_LIST.map(w => ({
-          token_text: w.word,
-          t_in: w.start_time,
-          t_out: w.end_time,
-          speaker_id: 1
-        }));
-        document.getElementById('transcriptInput').value = JSON.stringify({ transcript_items: renamedList }, null, 2);
-        showToast('Loaded Renamed Variables Scenario (token_text, t_in, t_out)');
+        const renamedList = SAMPLE_WORDS_LIST.map(w => ({ token_text: w.word, t_in: w.start_time, t_out: w.end_time, speaker_id: 1 }));
+        transcript = JSON.stringify({ transcript_items: renamedList }, null, 2);
+        msg = 'Loaded Renamed Variables Scenario (token_text, t_in, t_out)';
       } else if (scenarioKey === 'combined_single_var') {
-        // Simulate a transcript where all 3 values are packed inside a single property `"packed": "There | 00:00:00.000 - 00:00:00.297"`
-        const combinedList = SAMPLE_WORDS_LIST.map(w => ({
-          packed: `${w.word} | ${w.start_time} - ${w.end_time}`
-        }));
-        document.getElementById('transcriptInput').value = JSON.stringify({ stream: combinedList }, null, 2);
-        showToast('Loaded Single Combined Variable Scenario');
+        const combinedList = SAMPLE_WORDS_LIST.map(w => ({ packed: `${w.word} | ${w.start_time} - ${w.end_time}` }));
+        transcript = JSON.stringify({ stream: combinedList }, null, 2);
+        msg = 'Loaded Single Combined Variable Scenario';
       } else if (scenarioKey === 'tuple_array') {
-        // Simulate an array of arrays `[["There", "00:00:00.000", "00:00:00.297"], ...]`
-        const tupleList = SAMPLE_WORDS_LIST.map(w => [w.word, w.start_time, w.end_time]);
-        document.getElementById('transcriptInput').value = JSON.stringify(tupleList, null, 2);
-        showToast('Loaded Array of Tuples Scenario');
+        transcript = JSON.stringify(SAMPLE_WORDS_LIST.map(w => [w.word, w.start_time, w.end_time]), null, 2);
+        msg = 'Loaded Array of Tuples Scenario';
+      } else if (scenarioKey === 'messy_take') {
+        transcript = JSON.stringify({ words: buildMessyTake() }, null, 2);
+        msg = 'Loaded messy recording — open the Issues tab';
+      } else if (scenarioKey === 'assemblyai_ms') {
+        const words = sampleWordsInSeconds();
+        transcript = JSON.stringify({
+          id: 'demo-transcript', status: 'completed', text: words.map(w => w.word).join(' '),
+          words: words.map(w => ({ text: w.word, start: Math.round(w.start * 1000), end: Math.round(w.end * 1000), confidence: 0.98, speaker: null }))
+        }, null, 2);
+        msg = 'Loaded AssemblyAI format (times in milliseconds)';
+      } else if (scenarioKey === 'whisper_segments') {
+        const groups = groupSampleByBeat();
+        transcript = JSON.stringify({
+          text: groups.map(g => g.map(w => w.word).join(' ')).join(' '),
+          segments: groups.map((g, i) => ({
+            id: i, start: g[0].start, end: g[g.length - 1].end, text: ' ' + g.map(w => w.word).join(' '),
+            words: g.map(w => ({ word: ' ' + w.word, start: w.start, end: w.end, probability: 0.95 }))
+          })),
+          language: 'en'
+        }, null, 2);
+        msg = 'Loaded Whisper format (words inside segments)';
+      } else if (scenarioKey === 'deepgram') {
+        const words = sampleWordsInSeconds();
+        transcript = JSON.stringify({
+          metadata: { request_id: 'demo', duration: 84.15, channels: 1 },
+          results: { channels: [{ alternatives: [{
+            transcript: words.map(w => w.word).join(' '), confidence: 0.99,
+            words: words.map(w => ({ word: w.word.toLowerCase().replace(/[^\p{L}\p{N}']/gu, ''), start: w.start, end: w.end, confidence: 0.99, punctuated_word: w.word }))
+          }] }] }
+        }, null, 2);
+        msg = 'Loaded Deepgram format (deeply nested)';
+      } else if (scenarioKey === 'srt_subtitles') {
+        const groups = groupSampleByBeat();
+        transcript = groups.map((g, i) => `${i + 1}\n${fmtSrtTime(g[0].start)} --> ${fmtSrtTime(g[g.length - 1].end)}\n${g.map(w => w.word).join(' ')}\n`).join('\n');
+        msg = 'Loaded SRT subtitles (sentence-level)';
       }
 
-      inspectAndPopulateTranscriptSchema();
-      runConversion();
+      $('transcriptInput').value = transcript;
+      saveInputs();
+      inspectAndPopulateTranscriptSchema(true);
+      runConversion(true);
+      showToast(msg);
     }
 
     /* =========================================================================
        COPY & DOWNLOAD UTILITIES
        ========================================================================= */
-    function copyOutput() {
-      const out = document.getElementById('outputTextarea');
+    async function copyOutput() {
+      const out = $('outputTextarea');
       if (!out.value) {
         showToast('No output to copy', 'error');
         return;
       }
-      out.select();
-      document.execCommand('copy');
-      window.getSelection().removeAllRanges();
+      try {
+        await navigator.clipboard.writeText(out.value);
+      } catch (_) {
+        out.select();
+        document.execCommand('copy');
+        window.getSelection().removeAllRanges();
+      }
       showToast('Recommended Structure copied to clipboard!');
     }
 
     function downloadOutput() {
-      const text = document.getElementById('outputTextarea').value;
+      const text = $('outputTextarea').value;
       if (!text) {
         showToast('Nothing to download', 'error');
         return;
@@ -1780,9 +2978,22 @@ LAST KEY: «10»
       showToast('Downloaded compressed_script_transcript.txt');
     }
 
-    // Initialize on load with the Crumbl Cookies dataset
+    // Start: restore the user's last inputs, otherwise load the Crumbl sample
     window.onload = function () {
-      loadScenario('crumbl_standard');
+      setupDragAndDrop();
+      let restored = false;
+      try {
+        const s = localStorage.getItem(LS_SCRIPT);
+        const t = localStorage.getItem(LS_TRANSCRIPT);
+        if ((s && s.trim()) || (t && t.trim())) {
+          $('scriptInput').value = s || '';
+          $('transcriptInput').value = t || '';
+          inspectAndPopulateTranscriptSchema(true);
+          runConversion(true);
+          restored = true;
+        }
+      } catch (_) { /* storage disabled */ }
+      if (!restored) loadScenario('crumbl_standard');
     };
   </script>
 </body>
