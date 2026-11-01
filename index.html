@@ -1,0 +1,1789 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Script & Transcript Context Compressor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); }
+    ::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.5); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.8); }
+    .code-font {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 h-full flex flex-col font-sans overflow-hidden select-none">
+
+  <!-- Top Header -->
+  <header class="bg-slate-900/95 border-b border-slate-800 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0 z-20">
+    <div class="flex items-center space-x-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-slate-950 font-bold text-lg">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm sm:text-base font-bold text-white tracking-wide">Script & Transcript Context Compressor</h1>
+          <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Recommended Structure v3</span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">Auto-aligns word-level timestamps into Section & Beat hierarchies with adaptive schema mapping</p>
+      </div>
+    </div>
+
+    <!-- Header Controls / Presets -->
+    <div class="flex items-center flex-wrap gap-2">
+      <!-- Sample Presets Dropdown -->
+      <div class="relative inline-block text-left">
+        <button id="presetBtn" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-flask text-emerald-400"></i>
+          <span>Test Presets (Schema Variants)</span>
+          <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i>
+        </button>
+        <div id="presetDropdown" class="hidden absolute right-0 mt-1 w-64 rounded-xl bg-slate-800 border border-slate-700 shadow-2xl py-1.5 z-50 text-xs">
+          <div class="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Load Sample Scenarios</div>
+          <button onclick="loadScenario('crumbl_standard')" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2">
+            <i class="fa-solid fa-cookie-bite text-pink-400 w-4"></i>
+            <div>
+              <div class="font-medium">1. Crumbl Script + Standard JSON</div>
+              <div class="text-[10px] text-slate-400">Keys: word, start_time, end_time</div>
+            </div>
+          </button>
+          <button onclick="loadScenario('renamed_keys')" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2">
+            <i class="fa-solid fa-shuffle text-amber-400 w-4"></i>
+            <div>
+              <div class="font-medium">2. Renamed JSON Variables</div>
+              <div class="text-[10px] text-slate-400">Keys: token_text, t_in, t_out</div>
+            </div>
+          </button>
+          <button onclick="loadScenario('combined_single_var')" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2">
+            <i class="fa-solid fa-compress-arrows-alt text-cyan-400 w-4"></i>
+            <div>
+              <div class="font-medium">3. Combined Single-Variable JSON</div>
+              <div class="text-[10px] text-slate-400">e.g. {"entry": "There | 0.000 - 0.297"}</div>
+            </div>
+          </button>
+          <button onclick="loadScenario('tuple_array')" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2">
+            <i class="fa-solid fa-brackets-square text-purple-400 w-4"></i>
+            <div>
+              <div class="font-medium">4. Array of Tuples Format</div>
+              <div class="text-[10px] text-slate-400">e.g. [["There", 0, 0.297], ...]</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <button onclick="runConversion()" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 shadow-sm shadow-emerald-900/50 transition">
+        <i class="fa-solid fa-bolt"></i>
+        <span>Convert & Align Now</span>
+      </button>
+
+      <button onclick="copyOutput()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition">
+        <i class="fa-regular fa-copy text-cyan-400"></i>
+        <span>Copy Output</span>
+      </button>
+
+      <button onclick="downloadOutput()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition" title="Download Recommended Structure (.txt)">
+        <i class="fa-solid fa-download text-emerald-400"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed top-14 right-5 z-50 transform transition-all duration-300 translate-y-[-20px] opacity-0 pointer-events-none px-4 py-2.5 rounded-xl shadow-2xl text-xs flex items-center gap-2 border bg-slate-800 border-slate-700 text-slate-100">
+    <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toastMsg">Completed</span>
+  </div>
+
+  <!-- Schema Warning Banner (Appears automatically if unknown keys detected) -->
+  <div id="schemaAlertBanner" class="hidden bg-amber-500/10 border-b border-amber-500/30 px-4 py-2 flex items-center justify-between text-xs text-amber-200 shrink-0">
+    <div class="flex items-center gap-2">
+      <i class="fa-solid fa-triangle-exclamation text-amber-400"></i>
+      <span id="schemaAlertText">Different variable structure detected in Transcript! Please verify or map the fields below.</span>
+    </div>
+    <button onclick="toggleTranscriptConfig(true)" class="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-semibold border border-amber-500/40 transition">
+      Open Field Mapper
+    </button>
+  </div>
+
+  <!-- Main 3-Column Workspace -->
+  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+
+    <!-- COLUMN 1: SCRIPT INPUT & PARSER MAPPER (4 Cols) -->
+    <section class="lg:col-span-4 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-900/30 overflow-hidden">
+      <!-- Panel Bar -->
+      <div class="px-3.5 py-2 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="w-5 h-5 rounded-md bg-pink-500/15 border border-pink-500/30 text-pink-400 flex items-center justify-center text-xs font-bold">1</span>
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-200">Script Input (Sections & Beats)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="scriptStatsBadge" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono">0 Sec · 0 Beats</span>
+          <button onclick="toggleScriptConfig()" id="scriptConfigBtn" title="Configure Script Table Columns & Patterns" class="px-2 py-1 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1 transition">
+            <i class="fa-solid fa-sliders text-pink-400"></i>
+            <span>Map Script</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Collapsible Script Mapper Drawer -->
+      <div id="scriptConfigDrawer" class="hidden bg-slate-900 border-b border-slate-800 p-3 space-y-2.5 text-xs shrink-0">
+        <div class="flex items-center justify-between">
+          <span class="font-semibold text-pink-400 flex items-center gap-1.5"><i class="fa-solid fa-table-columns"></i> Script Structure Adaptation</span>
+          <button onclick="autoDetectScriptStructure()" class="text-[10px] text-emerald-400 hover:underline"><i class="fa-solid fa-wand-magic"></i> Auto-Detect</button>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[10px] text-slate-400 mb-1">Beat Parser Mode</label>
+            <select id="scriptParseMode" onchange="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-pink-500">
+              <option value="auto">Auto (Markdown Table + Freeform)</option>
+              <option value="table">Markdown Table Rows (| col | col |)</option>
+              <option value="inline">Inline Beat Key (e.g. «1» Text...)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-400 mb-1">Section Heading Prefix</label>
+            <input id="sectionRegexInput" type="text" value="^#{1,4}\s+(.+)$" oninput="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-pink-500" title="Regex to capture Section Header">
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 pt-1">
+          <div>
+            <label class="block text-[10px] text-slate-400 mb-1">Key Table Col #</label>
+            <select id="scriptKeyCol" onchange="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
+              <option value="auto">Auto-find «#»</option>
+              <option value="0">Column 1</option>
+              <option value="1">Column 2</option>
+              <option value="2">Column 3</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-400 mb-1">Script Text Col #</label>
+            <select id="scriptTextCol" onchange="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
+              <option value="auto">Auto (Next to Key)</option>
+              <option value="0">Column 1</option>
+              <option value="1" selected>Column 2</option>
+              <option value="2">Column 3</option>
+              <option value="3">Column 4</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-400 mb-1">Beat Key Format</label>
+            <select id="beatKeyFormat" onchange="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
+              <option value="guillemet">Keep «1»</option>
+              <option value="raw">Keep As-Is</option>
+              <option value="wrap">Force «Key»</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Script Textarea -->
+      <div class="flex-1 flex flex-col relative overflow-hidden">
+        <textarea id="scriptInput" spellcheck="false"
+          placeholder="Paste your Markdown Script with ## Sections and | «1» | Script Line | tables here..."
+          oninput="onInputChanged()"
+          class="flex-1 w-full bg-slate-950/80 text-slate-200 code-font text-xs p-3.5 focus:outline-none resize-none leading-relaxed"></textarea>
+      </div>
+    </section>
+
+    <!-- COLUMN 2: WORD-BY-WORD TRANSCRIPT & DYNAMIC FIELD MAPPER (4 Cols) -->
+    <section class="lg:col-span-4 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-900/30 overflow-hidden">
+      <!-- Panel Bar -->
+      <div class="px-3.5 py-2 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="w-5 h-5 rounded-md bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center text-xs font-bold">2</span>
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-200">Word-by-Word Transcript</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="transcriptStatsBadge" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono">0 Words</span>
+          <button onclick="toggleTranscriptConfig()" id="transcriptConfigBtn" class="px-2 py-1 text-[11px] rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 flex items-center gap-1 transition">
+            <i class="fa-solid fa-diagram-project"></i>
+            <span>Schema Mapper</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Dynamic Transcript Field Mapper Drawer (Open by default or when needed so user sees how adaptable it is) -->
+      <div id="transcriptConfigDrawer" class="bg-slate-900 border-b border-slate-800 p-3 space-y-2.5 text-xs shrink-0">
+        <div class="flex items-center justify-between">
+          <span class="font-semibold text-cyan-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-sliders"></i> Dynamic Transcript Schema Mapper
+          </span>
+          <span id="detectedFormatPill" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Auto-Mapped</span>
+        </div>
+
+        <!-- Mode Selector & Root Path -->
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[10px] text-slate-400 mb-1">Data Structure Mode</label>
+            <select id="transcriptModeSelect" onchange="onTranscriptModeChange()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+              <option value="objects">Separate Variables (JSON Objects)</option>
+              <option value="combined">Single Variable / Combined String</option>
+              <option value="tuples">Array of Arrays [word, start, end]</option>
+              <option value="lines">Plain Text / Delimited Lines</option>
+            </select>
+          </div>
+          <div id="arrayPathContainer">
+            <label class="block text-[10px] text-slate-400 mb-1">JSON Array Location</label>
+            <select id="jsonArrayPathSelect" onchange="onArrayPathChange()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500">
+              <option value="__root__">[Root Array]</option>
+              <option value="words" selected>words</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- MODE A: Separate Object Keys -->
+        <div id="modeObjectsBox" class="grid grid-cols-3 gap-2 pt-1">
+          <div>
+            <label class="block text-[10px] text-slate-400 mb-1">Word Variable</label>
+            <select id="mapWordKey" onchange="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-emerald-300 font-mono">
+              <option value="word">word</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-400 mb-1">Start Time Variable</label>
+            <select id="mapStartKey" onchange="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-amber-300 font-mono">
+              <option value="start_time">start_time</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-400 mb-1">End Time Variable</label>
+            <select id="mapEndKey" onchange="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-cyan-300 font-mono">
+              <option value="end_time">end_time</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- MODE B: Combined Single Variable / String Splitter -->
+        <div id="modeCombinedBox" class="hidden space-y-2 pt-1">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-1">Source Variable (if Object)</label>
+              <select id="mapCombinedSourceKey" onchange="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-emerald-300 font-mono">
+                <option value="__self__">[Item is String itself]</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-1">Split Regex / Delimiters</label>
+              <input id="combinedDelimiterInput" type="text" value="[\|\s\-–,]+" oninput="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono" title="Regex used to split single variable into parts">
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-1">Word Part Index</label>
+              <input id="combWordIdx" type="number" min="0" value="0" oninput="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono">
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-1">Start Part Index</label>
+              <input id="combStartIdx" type="number" min="0" value="1" oninput="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono">
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-1">End Part Index</label>
+              <input id="combEndIdx" type="number" min="0" value="2" oninput="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono">
+            </div>
+          </div>
+        </div>
+
+        <!-- MODE C: Tuples [word, start, end] -->
+        <div id="modeTuplesBox" class="hidden grid grid-cols-3 gap-2 pt-1">
+          <div>
+            <label class="block text-[10px] text-slate-400 mb-1">Word Array Index</label>
+            <input id="tupleWordIdx" type="number" min="0" value="0" oninput="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono">
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-400 mb-1">Start Array Index</label>
+            <input id="tupleStartIdx" type="number" min="0" value="1" oninput="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono">
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-400 mb-1">End Array Index</label>
+            <input id="tupleEndIdx" type="number" min="0" value="2" oninput="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono">
+          </div>
+        </div>
+
+        <!-- Timestamp Precision Setting -->
+        <div class="flex items-center justify-between pt-1 border-t border-slate-800/80 text-[11px]">
+          <span class="text-slate-400">Timestamp Precision:</span>
+          <select id="timeFormatPolicy" onchange="runConversion()" class="bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-[11px] text-slate-200">
+            <option value="exact3" selected>Seconds with Exact JSON Decimals (0.297)</option>
+            <option value="raw">Keep Original String Unchanged (00:00:00.297)</option>
+            <option value="ms_to_sec">Input is Milliseconds (297 ➔ 0.297)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Transcript Textarea -->
+      <div class="flex-1 flex flex-col relative overflow-hidden">
+        <textarea id="transcriptInput" spellcheck="false"
+          placeholder='Paste your word-by-word JSON or text here...'
+          oninput="onTranscriptRawInput()"
+          class="flex-1 w-full bg-slate-950/80 text-cyan-200/90 code-font text-xs p-3.5 focus:outline-none resize-none leading-relaxed"></textarea>
+      </div>
+    </section>
+
+    <!-- COLUMN 3: RECOMMENDED STRUCTURE OUTPUT & ALIGNMENT INSPECTOR (4 Cols) -->
+    <section class="lg:col-span-4 flex flex-col bg-slate-950 overflow-hidden">
+      <!-- Panel Bar -->
+      <div class="px-3.5 py-2 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="w-5 h-5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-xs font-bold">3</span>
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-200">Recommended Structure Output</span>
+        </div>
+
+        <!-- View Switcher: Raw Output vs Beat Inspector -->
+        <div class="flex items-center bg-slate-800 p-0.5 rounded-lg border border-slate-700 text-[11px]">
+          <button id="tabOutputBtn" onclick="switchOutputTab('text')" class="px-2.5 py-1 rounded-md bg-emerald-600 text-white font-medium transition">
+            Compressed Text
+          </button>
+          <button id="tabInspectorBtn" onclick="switchOutputTab('inspector')" class="px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition">
+            Alignment Check
+          </button>
+        </div>
+      </div>
+
+      <!-- Output Format Sub-bar -->
+      <div class="px-3.5 py-2 bg-slate-900/50 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[11px] shrink-0">
+        <div class="flex items-center gap-2">
+          <label class="text-slate-400">Style:</label>
+          <select id="outputLayoutStyle" onchange="runConversion(false)" class="bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-[11px] text-slate-200">
+            <option value="recommended" selected>Recommended Block (## Sec / ### «Key»)</option>
+            <option value="compact_line">Single-Line per Beat («1» | word|s|e ...)</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <label class="flex items-center gap-1.5 text-slate-400 cursor-pointer" title="Hide beats that have no matching words (e.g. when pasting a partial transcript)">
+            <input id="hideEmptyBeatsToggle" type="checkbox" checked onchange="runConversion(false)" class="rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0">
+            <span>Hide empty beats</span>
+          </label>
+          <label class="flex items-center gap-1.5 text-slate-400 cursor-pointer">
+            <input id="includeUnmatchedToggle" type="checkbox" checked onchange="runConversion(false)" class="rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0">
+            <span>Trailing words</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Output Text View -->
+      <div id="outputTextContainer" class="flex-1 flex flex-col relative overflow-hidden">
+        <textarea id="outputTextarea" readonly spellcheck="false"
+          placeholder="Recommended structure output will appear here automatically..."
+          class="flex-1 w-full bg-slate-950 text-emerald-300 code-font text-xs p-4 focus:outline-none resize-none leading-relaxed selection:bg-emerald-800 selection:text-white"></textarea>
+      </div>
+
+      <!-- Alignment Inspector View (Hidden by default) -->
+      <div id="outputInspectorContainer" class="hidden flex-1 overflow-y-auto p-3 space-y-2.5 bg-slate-950">
+        <!-- Populated dynamically with beat-by-beat alignment diagnostics -->
+      </div>
+
+      <!-- Bottom Compression & Alignment Telemetry Bar -->
+      <div class="px-3.5 py-2.5 bg-slate-900 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[11px] shrink-0">
+        <div class="flex items-center gap-3">
+          <span id="compressionRatioBadge" class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold">
+            0% Context Saved
+          </span>
+          <span id="tokenCountCompare" class="text-slate-400 font-mono text-[10px]">
+            0 ➔ 0 est. tokens
+          </span>
+        </div>
+        <div id="alignmentHealthBadge" class="text-[11px] text-slate-300 flex items-center gap-1.5">
+          <i class="fa-solid fa-check-double text-emerald-400"></i>
+          <span>Aligned</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- APPLICATION SCRIPT -->
+  <script>
+    /* =========================================================================
+       SAMPLE DATA PRESETS (Full Crumbl Hook + Backstory & Transcript Variants)
+       ========================================================================= */
+    const CRUMBL_SCRIPT_SAMPLE = `# The Rise and Fall of Crumbl — Visual Guide v3
+
+Oct 15, 2026 · @Hamza Javed
+
+## 0. Hook
+
+| Key | Script Line | Type | Visuals |
+| --- | --- | --- | --- |
+| «1» | There was a time when no bakery chain in America could touch Crumbl Cookies. | ERA | \`[B-ROLL]:\` Crowd lined up out the door and around a strip mall at a Crumbl grand opening, pink boxes in hand |
+| «2» | In 2022, the average Crumbl store was bringing in nearly two million dollars a year. | AI | \`[ARTICLE SHOT]:\` QSR Research Hub Crumbl deep dive AUV 1.84 million |
+| «3» | That was more than the average Dunkin' or Five Guys. | AI |  |
+| «4» | And almost four times what a typical American bakery made. | AI |  |
+| «5» | Then Crumbl started expanding faster than even McDonald's had. | AI |  |
+| «6» | By February 2024, it had opened its thousandth store. | EVIDENCE | \`[B-ROLL]:\` Crumbl's 1,000th store opening in Burbank, California |
+| «7» | It took less than seven years. | HOLD | \`[HOLD «6»]\` — \`[TEXT OVERLAY]:\` 2017 → 2024 |
+| «8» | And the growth kept going. | ERA | \`[B-ROLL]:\` Installers mounting a pink Crumbl sign on a brand-new storefront |
+| «9» | By May 2025, investors valued Crumbl at two billion dollars. | EVIDENCE | \`[ARTICLE SHOT]:\` QSR Magazine Crumbl to sell minority stake to TSG Consumer Partners |
+| «10» | It even had more TikTok followers than Starbucks and Nike combined. | EVIDENCE | \`[ARTICLE SHOT]:\` QSR Magazine Crumbl TikTok followers Nike Starbucks |
+
+LAST KEY: «10»
+
+## 1. Backstory
+
+| Key | Script Line | Type | Visuals |
+| --- | --- | --- | --- |
+| «32» | In September 2017, two cousins, Jason McGowan and Sawyer Hemsley, were days away from opening Crumbl's first shop in Logan, Utah. | EVIDENCE | \`[IMAGE]:\` Early 2017 photo of Jason McGowan and Sawyer Hemsley |
+| «33» | They had one cookie, one small storefront, and a month-to-month lease. | ERA | \`[B-ROLL]:\` Close-up of a warm Crumbl milk chocolate chip cookie |`;
+
+    // Full word-by-word sequence matching the sample beats above (including "crumble", "$2,000,000", "1,000th", and split "month to month" to test DP alignment!)
+    const SAMPLE_WORDS_LIST = [
+      // Beat «1»
+      { word: "There", start_time: "00:00:00.000", end_time: "00:00:00.297", confidence: null },
+      { word: "was", start_time: "00:00:00.297", end_time: "00:00:00.594", confidence: null },
+      { word: "a", start_time: "00:00:00.594", end_time: "00:00:00.891", confidence: null },
+      { word: "time", start_time: "00:00:00.891", end_time: "00:00:01.189", confidence: null },
+      { word: "when", start_time: "00:00:01.189", end_time: "00:00:01.486", confidence: null },
+      { word: "no", start_time: "00:00:01.486", end_time: "00:00:01.783", confidence: null },
+      { word: "bakery", start_time: "00:00:01.783", end_time: "00:00:02.080", confidence: null },
+      { word: "chain", start_time: "00:00:02.080", end_time: "00:00:02.377", confidence: null },
+      { word: "in", start_time: "00:00:02.377", end_time: "00:00:02.674", confidence: null },
+      { word: "America", start_time: "00:00:02.674", end_time: "00:00:02.971", confidence: null },
+      { word: "could", start_time: "00:00:02.971", end_time: "00:00:03.269", confidence: null },
+      { word: "touch", start_time: "00:00:03.269", end_time: "00:00:03.566", confidence: null },
+      { word: "crumble", start_time: "00:00:03.566", end_time: "00:00:03.863", confidence: null },
+      { word: "cookies.", start_time: "00:00:03.863", end_time: "00:00:04.160", confidence: null },
+      // Beat «2»
+      { word: "In", start_time: "00:00:04.160", end_time: "00:00:04.549", confidence: null },
+      { word: "2022,", start_time: "00:00:04.549", end_time: "00:00:04.937", confidence: null },
+      { word: "the", start_time: "00:00:04.937", end_time: "00:00:05.326", confidence: null },
+      { word: "average", start_time: "00:00:05.326", end_time: "00:00:05.714", confidence: null },
+      { word: "crumble", start_time: "00:00:05.714", end_time: "00:00:06.103", confidence: null },
+      { word: "store", start_time: "00:00:06.103", end_time: "00:00:06.491", confidence: null },
+      { word: "was", start_time: "00:00:06.491", end_time: "00:00:06.750", confidence: null },
+      { word: "bringing", start_time: "00:00:06.750", end_time: "00:00:07.120", confidence: null },
+      { word: "in", start_time: "00:00:07.120", end_time: "00:00:07.310", confidence: null },
+      { word: "nearly", start_time: "00:00:07.310", end_time: "00:00:07.680", confidence: null },
+      { word: "two", start_time: "00:00:07.680", end_time: "00:00:07.950", confidence: null },
+      { word: "million", start_time: "00:00:07.950", end_time: "00:00:08.340", confidence: null },
+      { word: "dollars", start_time: "00:00:08.340", end_time: "00:00:08.720", confidence: null },
+      { word: "a", start_time: "00:00:08.720", end_time: "00:00:08.880", confidence: null },
+      { word: "year.", start_time: "00:00:08.880", end_time: "00:00:09.250", confidence: null },
+      // Beat «3»
+      { word: "That", start_time: "00:00:09.250", end_time: "00:00:09.510", confidence: null },
+      { word: "was", start_time: "00:00:09.510", end_time: "00:00:09.760", confidence: null },
+      { word: "more", start_time: "00:00:09.760", end_time: "00:00:10.020", confidence: null },
+      { word: "than", start_time: "00:00:10.020", end_time: "00:00:10.250", confidence: null },
+      { word: "the", start_time: "00:00:10.250", end_time: "00:00:10.450", confidence: null },
+      { word: "average", start_time: "00:00:10.450", end_time: "00:00:10.850", confidence: null },
+      { word: "Dunkin'", start_time: "00:00:10.850", end_time: "00:00:11.250", confidence: null },
+      { word: "or", start_time: "00:00:11.250", end_time: "00:00:11.450", confidence: null },
+      { word: "Five", start_time: "00:00:11.450", end_time: "00:00:11.780", confidence: null },
+      { word: "Guys.", start_time: "00:00:11.780", end_time: "00:00:12.190", confidence: null },
+      // Beat «4»
+      { word: "And", start_time: "00:00:12.190", end_time: "00:00:12.420", confidence: null },
+      { word: "almost", start_time: "00:00:12.420", end_time: "00:00:12.810", confidence: null },
+      { word: "4", start_time: "00:00:12.810", end_time: "00:00:13.100", confidence: null },
+      { word: "times", start_time: "00:00:13.100", end_time: "00:00:13.480", confidence: null },
+      { word: "what", start_time: "00:00:13.480", end_time: "00:00:13.710", confidence: null },
+      { word: "a", start_time: "00:00:13.710", end_time: "00:00:13.850", confidence: null },
+      { word: "typical", start_time: "00:00:13.850", end_time: "00:00:14.290", confidence: null },
+      { word: "American", start_time: "00:00:14.290", end_time: "00:00:14.750", confidence: null },
+      { word: "bakery", start_time: "00:00:14.750", end_time: "00:00:15.180", confidence: null },
+      { word: "made.", start_time: "00:00:15.180", end_time: "00:00:15.550", confidence: null },
+      // Beat «5»
+      { word: "Then", start_time: "00:00:15.550", end_time: "00:00:15.820", confidence: null },
+      { word: "crumble", start_time: "00:00:15.820", end_time: "00:00:16.210", confidence: null },
+      { word: "started", start_time: "00:00:16.210", end_time: "00:00:16.620", confidence: null },
+      { word: "expanding", start_time: "00:00:16.620", end_time: "00:00:17.150", confidence: null },
+      { word: "faster", start_time: "00:00:17.150", end_time: "00:00:17.550", confidence: null },
+      { word: "than", start_time: "00:00:17.550", end_time: "00:00:17.780", confidence: null },
+      { word: "even", start_time: "00:00:17.780", end_time: "00:00:18.090", confidence: null },
+      { word: "McDonald's", start_time: "00:00:18.090", end_time: "00:00:18.680", confidence: null },
+      { word: "had.", start_time: "00:00:18.680", end_time: "00:00:19.010", confidence: null },
+      // Beat «6»
+      { word: "By", start_time: "00:00:19.010", end_time: "00:00:19.250", confidence: null },
+      { word: "February", start_time: "00:00:19.250", end_time: "00:00:19.790", confidence: null },
+      { word: "2024,", start_time: "00:00:19.790", end_time: "00:00:20.320", confidence: null },
+      { word: "it", start_time: "00:00:20.320", end_time: "00:00:20.510", confidence: null },
+      { word: "had", start_time: "00:00:20.510", end_time: "00:00:20.750", confidence: null },
+      { word: "opened", start_time: "00:00:20.750", end_time: "00:00:21.140", confidence: null },
+      { word: "its", start_time: "00:00:21.140", end_time: "00:00:21.360", confidence: null },
+      { word: "1,000th", start_time: "00:00:21.360", end_time: "00:00:21.920", confidence: null },
+      { word: "store.", start_time: "00:00:21.920", end_time: "00:00:22.400", confidence: null },
+      // Beat «7»
+      { word: "It", start_time: "00:00:22.400", end_time: "00:00:22.610", confidence: null },
+      { word: "took", start_time: "00:00:22.610", end_time: "00:00:22.890", confidence: null },
+      { word: "less", start_time: "00:00:22.890", end_time: "00:00:23.150", confidence: null },
+      { word: "than", start_time: "00:00:23.150", end_time: "00:00:23.390", confidence: null },
+      { word: "7", start_time: "00:00:23.390", end_time: "00:00:23.720", confidence: null },
+      { word: "years.", start_time: "00:00:23.720", end_time: "00:00:24.150", confidence: null },
+      // Beat «8»
+      { word: "And", start_time: "00:00:24.150", end_time: "00:00:24.380", confidence: null },
+      { word: "the", start_time: "00:00:24.380", end_time: "00:00:24.590", confidence: null },
+      { word: "growth", start_time: "00:00:24.590", end_time: "00:00:24.980", confidence: null },
+      { word: "kept", start_time: "00:00:24.980", end_time: "00:00:25.290", confidence: null },
+      { word: "going.", start_time: "00:00:25.290", end_time: "00:00:25.720", confidence: null },
+      // Beat «9»
+      { word: "By", start_time: "00:00:25.720", end_time: "00:00:25.950", confidence: null },
+      { word: "May", start_time: "00:00:25.950", end_time: "00:00:26.280", confidence: null },
+      { word: "2025,", start_time: "00:00:26.280", end_time: "00:00:26.820", confidence: null },
+      { word: "investors", start_time: "00:00:26.820", end_time: "00:00:27.390", confidence: null },
+      { word: "valued", start_time: "00:00:27.390", end_time: "00:00:27.810", confidence: null },
+      { word: "crumble", start_time: "00:00:27.810", end_time: "00:00:28.210", confidence: null },
+      { word: "at", start_time: "00:00:28.210", end_time: "00:00:28.400", confidence: null },
+      { word: "2", start_time: "00:00:28.400", end_time: "00:00:28.690", confidence: null },
+      { word: "billion", start_time: "00:00:28.690", end_time: "00:00:29.120", confidence: null },
+      { word: "dollars.", start_time: "00:00:29.120", end_time: "00:00:29.620", confidence: null },
+      // Beat «10»
+      { word: "It", start_time: "00:00:29.620", end_time: "00:00:29.810", confidence: null },
+      { word: "even", start_time: "00:00:29.810", end_time: "00:00:30.120", confidence: null },
+      { word: "had", start_time: "00:00:30.120", end_time: "00:00:30.380", confidence: null },
+      { word: "more", start_time: "00:00:30.380", end_time: "00:00:30.650", confidence: null },
+      { word: "TikTok", start_time: "00:00:30.650", end_time: "00:00:31.120", confidence: null },
+      { word: "followers", start_time: "00:00:31.120", end_time: "00:00:31.650", confidence: null },
+      { word: "than", start_time: "00:00:31.650", end_time: "00:00:31.890", confidence: null },
+      { word: "Starbucks", start_time: "00:00:31.890", end_time: "00:00:32.450", confidence: null },
+      { word: "and", start_time: "00:00:32.450", end_time: "00:00:32.650", confidence: null },
+      { word: "Nike", start_time: "00:00:32.650", end_time: "00:00:33.050", confidence: null },
+      { word: "combined.", start_time: "00:00:33.050", end_time: "00:00:33.600", confidence: null },
+      // Beat «32» (Section 1. Backstory)
+      { word: "In", start_time: "00:01:12.000", end_time: "00:01:12.210", confidence: null },
+      { word: "September", start_time: "00:01:12.210", end_time: "00:01:12.780", confidence: null },
+      { word: "2017,", start_time: "00:01:12.780", end_time: "00:01:13.310", confidence: null },
+      { word: "two", start_time: "00:01:13.310", end_time: "00:01:13.590", confidence: null },
+      { word: "cousins,", start_time: "00:01:13.590", end_time: "00:01:14.080", confidence: null },
+      { word: "Jason", start_time: "00:01:14.080", end_time: "00:01:14.490", confidence: null },
+      { word: "McGowan", start_time: "00:01:14.490", end_time: "00:01:15.020", confidence: null },
+      { word: "and", start_time: "00:01:15.020", end_time: "00:01:15.220", confidence: null },
+      { word: "Sawyer", start_time: "00:01:15.220", end_time: "00:01:15.650", confidence: null },
+      { word: "Hemsley,", start_time: "00:01:15.650", end_time: "00:01:16.180", confidence: null },
+      { word: "were", start_time: "00:01:16.180", end_time: "00:01:16.410", confidence: null },
+      { word: "days", start_time: "00:01:16.410", end_time: "00:01:16.750", confidence: null },
+      { word: "away", start_time: "00:01:16.750", end_time: "00:01:17.080", confidence: null },
+      { word: "from", start_time: "00:01:17.080", end_time: "00:01:17.320", confidence: null },
+      { word: "opening", start_time: "00:01:17.320", end_time: "00:01:17.760", confidence: null },
+      { word: "Crumbl's", start_time: "00:01:17.760", end_time: "00:01:18.290", confidence: null },
+      { word: "first", start_time: "00:01:18.290", end_time: "00:01:18.620", confidence: null },
+      { word: "shop", start_time: "00:01:18.620", end_time: "00:01:18.960", confidence: null },
+      { word: "in", start_time: "00:01:18.960", end_time: "00:01:19.150", confidence: null },
+      { word: "Logan,", start_time: "00:01:19.150", end_time: "00:01:19.580", confidence: null },
+      { word: "Utah.", start_time: "00:01:19.580", end_time: "00:01:20.050", confidence: null },
+      // Beat «33» (Testing hyphenated split "month", "to", "month" in transcript vs "month-to-month" in script)
+      { word: "They", start_time: "00:01:20.050", end_time: "00:01:20.310", confidence: null },
+      { word: "had", start_time: "00:01:20.310", end_time: "00:01:20.580", confidence: null },
+      { word: "one", start_time: "00:01:20.580", end_time: "00:01:20.850", confidence: null },
+      { word: "cookie,", start_time: "00:01:20.850", end_time: "00:01:21.320", confidence: null },
+      { word: "one", start_time: "00:01:21.320", end_time: "00:01:21.590", confidence: null },
+      { word: "small", start_time: "00:01:21.590", end_time: "00:01:21.950", confidence: null },
+      { word: "storefront,", start_time: "00:01:21.950", end_time: "00:01:22.580", confidence: null },
+      { word: "and", start_time: "00:01:22.580", end_time: "00:01:22.780", confidence: null },
+      { word: "a", start_time: "00:01:22.780", end_time: "00:01:22.920", confidence: null },
+      { word: "month", start_time: "00:01:22.920", end_time: "00:01:23.180", confidence: null },
+      { word: "to", start_time: "00:01:23.180", end_time: "00:01:23.380", confidence: null },
+      { word: "month", start_time: "00:01:23.380", end_time: "00:01:23.680", confidence: null },
+      { word: "lease.", start_time: "00:01:23.680", end_time: "00:01:24.150", confidence: null }
+    ];
+
+    /* =========================================================================
+       UI HELPERS & DROPDOWNS
+       ========================================================================= */
+    const presetBtn = document.getElementById('presetBtn');
+    const presetDropdown = document.getElementById('presetDropdown');
+    presetBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      presetDropdown.classList.toggle('hidden');
+    });
+    window.addEventListener('click', () => {
+      if (!presetDropdown.classList.contains('hidden')) presetDropdown.classList.add('hidden');
+    });
+
+    function showToast(msg, type = 'success') {
+      const toast = document.getElementById('toast');
+      const icon = document.getElementById('toastIcon');
+      document.getElementById('toastMsg').textContent = msg;
+      icon.className = type === 'error'
+        ? 'fa-solid fa-circle-xmark text-rose-400'
+        : type === 'warn'
+        ? 'fa-solid fa-triangle-exclamation text-amber-400'
+        : 'fa-solid fa-circle-check text-emerald-400';
+      toast.classList.remove('opacity-0', 'translate-y-[-20px]', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-[-20px]', 'pointer-events-none');
+      }, 2600);
+    }
+
+    function toggleScriptConfig() {
+      document.getElementById('scriptConfigDrawer').classList.toggle('hidden');
+    }
+
+    function toggleTranscriptConfig(forceOpen = false) {
+      const drawer = document.getElementById('transcriptConfigDrawer');
+      if (forceOpen) drawer.classList.remove('hidden');
+      else drawer.classList.toggle('hidden');
+    }
+
+    function switchOutputTab(tab) {
+      const textCont = document.getElementById('outputTextContainer');
+      const inspCont = document.getElementById('outputInspectorContainer');
+      const btnText = document.getElementById('tabOutputBtn');
+      const btnInsp = document.getElementById('tabInspectorBtn');
+
+      if (tab === 'text') {
+        textCont.classList.remove('hidden');
+        inspCont.classList.add('hidden');
+        btnText.className = 'px-2.5 py-1 rounded-md bg-emerald-600 text-white font-medium transition';
+        btnInsp.className = 'px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition';
+      } else {
+        textCont.classList.add('hidden');
+        inspCont.classList.remove('hidden');
+        btnInsp.className = 'px-2.5 py-1 rounded-md bg-emerald-600 text-white font-medium transition';
+        btnText.className = 'px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition';
+      }
+    }
+
+    /* =========================================================================
+       ADAPTIVE TRANSCRIPT PARSER, SCHEMA MAPPER & SCRIPT PARSER
+       ========================================================================= */
+    let inputDebounceTimer = null;
+
+    function onInputChanged() {
+      clearTimeout(inputDebounceTimer);
+      inputDebounceTimer = setTimeout(() => {
+        runConversion(true);
+      }, 180);
+    }
+
+    function onTranscriptRawInput() {
+      clearTimeout(inputDebounceTimer);
+      inputDebounceTimer = setTimeout(() => {
+        inspectAndPopulateTranscriptSchema();
+        runConversion(true);
+      }, 220);
+    }
+
+    function onTranscriptModeChange() {
+      const mode = document.getElementById('transcriptModeSelect').value;
+      document.getElementById('modeObjectsBox').classList.toggle('hidden', mode !== 'objects');
+      document.getElementById('modeCombinedBox').classList.toggle('hidden', mode !== 'combined');
+      document.getElementById('modeTuplesBox').classList.toggle('hidden', mode !== 'tuples');
+      document.getElementById('arrayPathContainer').classList.toggle('hidden', mode === 'lines');
+      runConversion(true);
+    }
+
+    function onArrayPathChange() {
+      populateKeysForSelectedArrayPath();
+      runConversion(true);
+    }
+
+    // Safely parses complete or truncated JSON snippets (e.g. trailing comma or open brace)
+    function tryParseFlexibleJSON(rawText) {
+      if (!rawText || !rawText.trim()) return null;
+      let s = rawText.trim();
+
+      // If user pasted `"words": [ ...` without outer `{ }`, wrap it
+      if (/^"[a-zA-Z0-9_]+"\s*:/.test(s) || /^"[a-zA-Z0-9_]+"\s*:\s*\[/.test(s)) {
+        s = '{' + s + '}';
+      }
+
+      try {
+        return JSON.parse(s);
+      } catch (e) {
+        // Attempt auto-repair of truncated JSON array/object
+        let repaired = s;
+        // Remove trailing incomplete object after last complete `}`
+        const lastCloseBrace = repaired.lastIndexOf('}');
+        if (lastCloseBrace !== -1) {
+          repaired = repaired.slice(0, lastCloseBrace + 1);
+          const openBrackets = (repaired.match(/\[/g) || []).length - (repaired.match(/\]/g) || []).length;
+          const openBraces = (repaired.match(/\{/g) || []).length - (repaired.match(/\}/g) || []).length;
+          for (let i = 0; i < openBrackets; i++) repaired += ']';
+          for (let i = 0; i < openBraces; i++) repaired += '}';
+          try {
+            return JSON.parse(repaired);
+          } catch (_) {}
+        }
+      }
+      return null;
+    }
+
+    let cachedParsedTranscriptJSON = null;
+
+    function inspectAndPopulateTranscriptSchema() {
+      const raw = document.getElementById('transcriptInput').value.trim();
+      const alertBanner = document.getElementById('schemaAlertBanner');
+      const pill = document.getElementById('detectedFormatPill');
+      alertBanner.classList.add('hidden');
+
+      if (!raw) {
+        cachedParsedTranscriptJSON = null;
+        return;
+      }
+
+      const parsed = tryParseFlexibleJSON(raw);
+      cachedParsedTranscriptJSON = parsed;
+
+      if (!parsed) {
+        // Plain text / delimited lines fallback
+        document.getElementById('transcriptModeSelect').value = 'lines';
+        pill.textContent = 'Delimited Text Mode';
+        onTranscriptModeChange();
+        return;
+      }
+
+      // Discover candidate arrays inside parsed JSON
+      const arrayPaths = [];
+      if (Array.isArray(parsed)) {
+        arrayPaths.push({ path: '__root__', label: `[Root Array] (${parsed.length} items)`, arr: parsed });
+      } else if (typeof parsed === 'object') {
+        Object.keys(parsed).forEach(k => {
+          if (Array.isArray(parsed[k])) {
+            arrayPaths.push({ path: k, label: `${k} (${parsed[k].length} items)`, arr: parsed[k] });
+          } else if (parsed[k] && typeof parsed[k] === 'object') {
+            Object.keys(parsed[k]).forEach(subK => {
+              if (Array.isArray(parsed[k][subK])) {
+                const p = `${k}.${subK}`;
+                arrayPaths.push({ path: p, label: `${p} (${parsed[k][subK].length} items)`, arr: parsed[k][subK] });
+              }
+            });
+          }
+        });
+      }
+
+      const pathSelect = document.getElementById('jsonArrayPathSelect');
+      pathSelect.innerHTML = '';
+      arrayPaths.forEach(ap => {
+        const opt = document.createElement('option');
+        opt.value = ap.path;
+        opt.textContent = ap.label;
+        pathSelect.appendChild(opt);
+      });
+
+      if (arrayPaths.length > 0) {
+        pathSelect.value = arrayPaths[0].path;
+      }
+
+      populateKeysForSelectedArrayPath();
+    }
+
+    function getArrayByPath(rootObj, pathStr) {
+      if (!rootObj) return [];
+      if (pathStr === '__root__') return Array.isArray(rootObj) ? rootObj : [];
+      const parts = pathStr.split('.');
+      let cur = rootObj;
+      for (const p of parts) {
+        if (cur && typeof cur === 'object' && p in cur) cur = cur[p];
+        else return [];
+      }
+      return Array.isArray(cur) ? cur : [];
+    }
+
+    function populateKeysForSelectedArrayPath() {
+      const pathStr = document.getElementById('jsonArrayPathSelect').value;
+      const arr = getArrayByPath(cachedParsedTranscriptJSON, pathStr);
+      const alertBanner = document.getElementById('schemaAlertBanner');
+      const alertText = document.getElementById('schemaAlertText');
+      const pill = document.getElementById('detectedFormatPill');
+
+      if (!arr || arr.length === 0) return;
+
+      const sample = arr[0];
+
+      // Case 1: Array of Tuples e.g. ["There", "00:00:00.000", "00:00:00.297"]
+      if (Array.isArray(sample)) {
+        document.getElementById('transcriptModeSelect').value = 'tuples';
+        pill.textContent = 'Tuple Array [w,s,e]';
+        onTranscriptModeChange();
+        return;
+      }
+
+      // Case 2: Array of Strings e.g. ["There|0.000|0.297"]
+      if (typeof sample === 'string') {
+        document.getElementById('transcriptModeSelect').value = 'combined';
+        const combSel = document.getElementById('mapCombinedSourceKey');
+        combSel.innerHTML = `<option value="__self__">[Item is String itself]</option>`;
+        pill.textContent = 'Combined String Array';
+        onTranscriptModeChange();
+        return;
+      }
+
+      // Case 3: Array of Objects
+      if (typeof sample === 'object' && sample !== null) {
+        const keys = Object.keys(sample);
+
+        // If object has only 1 string property containing pipes/delimiters, switch to Combined Single Variable mode
+        if (keys.length === 1 && typeof sample[keys[0]] === 'string' && /[\|\-]/.test(sample[keys[0]])) {
+          document.getElementById('transcriptModeSelect').value = 'combined';
+          const combSel = document.getElementById('mapCombinedSourceKey');
+          combSel.innerHTML = keys.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`).join('');
+          combSel.value = keys[0];
+          pill.textContent = `Single Variable (${keys[0]})`;
+          alertBanner.classList.remove('hidden');
+          alertText.textContent = `Single-variable format detected ("${keys[0]}"). Automatically mapped using split rules!`;
+          onTranscriptModeChange();
+          return;
+        }
+
+        // Standard or Renamed Separate Variables Mode
+        document.getElementById('transcriptModeSelect').value = 'objects';
+        const wordSel = document.getElementById('mapWordKey');
+        const startSel = document.getElementById('mapStartKey');
+        const endSel = document.getElementById('mapEndKey');
+        const combSel = document.getElementById('mapCombinedSourceKey');
+
+        const optionsHtml = keys.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`).join('');
+        wordSel.innerHTML = optionsHtml;
+        startSel.innerHTML = optionsHtml;
+        endSel.innerHTML = optionsHtml;
+        combSel.innerHTML = `<option value="__self__">[Item is String itself]</option>` + optionsHtml;
+
+        // Heuristic auto-matching for Word, Start, and End keys
+        const guessedWord = keys.find(k => /^(word|text|token|token_text|w|value|label)$/i.test(k))
+          || keys.find(k => /word|text|tok/i.test(k))
+          || keys[0];
+        const guessedStart = keys.find(k => /^(start_time|start|t_in|begin|from|s|startTime)$/i.test(k))
+          || keys.find(k => /start|in|begin/i.test(k))
+          || keys[1] || keys[0];
+        const guessedEnd = keys.find(k => /^(end_time|end|t_out|finish|to|e|endTime)$/i.test(k))
+          || keys.find(k => /end|out|stop/i.test(k))
+          || keys[2] || keys[0];
+
+        wordSel.value = guessedWord;
+        startSel.value = guessedStart;
+        endSel.value = guessedEnd;
+
+        const isStandard = (guessedWord === 'word' && guessedStart === 'start_time' && guessedEnd === 'end_time');
+        if (!isStandard) {
+          pill.textContent = `Mapped: ${guessedWord}/${guessedStart}/${guessedEnd}`;
+          alertBanner.classList.remove('hidden');
+          alertText.textContent = `Custom JSON variables detected (${keys.join(', ')}). Auto-mapped to [${guessedWord} | ${guessedStart} | ${guessedEnd}].`;
+        } else {
+          pill.textContent = 'Standard JSON Mapped';
+        }
+
+        onTranscriptModeChange();
+      }
+    }
+
+    // Converts "00:00:03.566" or number to exact 3-decimal seconds ("3.566") preserving JSON milliseconds
+    function formatTimestampValue(rawVal, policy) {
+      if (rawVal === undefined || rawVal === null) return '0.000';
+      const str = String(rawVal).trim();
+      if (!str) return '0.000';
+      if (policy === 'raw') return str;
+
+      if (policy === 'ms_to_sec') {
+        const num = parseFloat(str);
+        return isNaN(num) ? '0.000' : (num / 1000).toFixed(3);
+      }
+
+      // Check HH:MM:SS.mmm or MM:SS.mmm format while preserving exact decimal digits
+      const hmsMatch = str.match(/^(?:(\d+):)?(\d{1,2}):(\d{1,2})(?:\.(\d+))?$/);
+      if (hmsMatch) {
+        const hours = parseInt(hmsMatch[1] || '0', 10);
+        const mins = parseInt(hmsMatch[2] || '0', 10);
+        const secs = parseInt(hmsMatch[3] || '0', 10);
+        const decPart = (hmsMatch[4] !== undefined) ? hmsMatch[4] : '000';
+        const totalWholeSeconds = (hours * 3600) + (mins * 60) + secs;
+        return `${totalWholeSeconds}.${decPart}`;
+      }
+
+      // Plain numeric seconds e.g. 3.566 or 0.3
+      const num = parseFloat(str);
+      if (!isNaN(num)) {
+        const dotIdx = str.indexOf('.');
+        if (dotIdx !== -1) {
+          const dec = str.slice(dotIdx + 1).replace(/[^0-9]/g, '');
+          if (dec.length >= 3) return `${Math.floor(num)}.${dec}`;
+        }
+        return num.toFixed(3);
+      }
+      return str;
+    }
+
+    function extractTranscriptWords() {
+      const raw = document.getElementById('transcriptInput').value.trim();
+      if (!raw) return [];
+
+      const mode = document.getElementById('transcriptModeSelect').value;
+      const timePolicy = document.getElementById('timeFormatPolicy').value;
+      const results = [];
+
+      if (mode === 'lines') {
+        const lines = raw.split(/\r?\n/);
+        lines.forEach(line => {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith('#')) return;
+          const parts = trimmed.split('|').map(s => s.trim());
+          if (parts.length >= 3) {
+            results.push({
+              word: parts[0],
+              start: formatTimestampValue(parts[1], timePolicy),
+              end: formatTimestampValue(parts[2], timePolicy)
+            });
+          }
+        });
+        return results;
+      }
+
+      const parsed = cachedParsedTranscriptJSON || tryParseFlexibleJSON(raw);
+      if (!parsed) return results;
+
+      const pathStr = document.getElementById('jsonArrayPathSelect').value || '__root__';
+      const arr = getArrayByPath(parsed, pathStr);
+      if (!Array.isArray(arr)) return results;
+
+      if (mode === 'objects') {
+        const wKey = document.getElementById('mapWordKey').value || 'word';
+        const sKey = document.getElementById('mapStartKey').value || 'start_time';
+        const eKey = document.getElementById('mapEndKey').value || 'end_time';
+
+        arr.forEach(item => {
+          if (!item || typeof item !== 'object') return;
+          const w = item[wKey];
+          if (w === undefined || w === null || String(w).trim() === '') return;
+          results.push({
+            word: String(w).trim(),
+            start: formatTimestampValue(item[sKey], timePolicy),
+            end: formatTimestampValue(item[eKey], timePolicy)
+          });
+        });
+      } else if (mode === 'combined') {
+        const srcKey = document.getElementById('mapCombinedSourceKey').value;
+        const delimPattern = document.getElementById('combinedDelimiterInput').value || '[\\|\\s\\-–,]+';
+        let regex;
+        try { regex = new RegExp(delimPattern); } catch (_) { regex = /[\|\s\-–,]+/; }
+
+        const wIdx = parseInt(document.getElementById('combWordIdx').value || '0', 10);
+        const sIdx = parseInt(document.getElementById('combStartIdx').value || '1', 10);
+        const eIdx = parseInt(document.getElementById('combEndIdx').value || '2', 10);
+
+        arr.forEach(item => {
+          const strVal = (srcKey === '__self__' || typeof item === 'string')
+            ? String(item)
+            : (item && item[srcKey] !== undefined ? String(item[srcKey]) : '');
+          if (!strVal.trim()) return;
+          const parts = strVal.trim().split(regex).filter(Boolean);
+          if (parts.length > Math.max(wIdx, sIdx, eIdx)) {
+            results.push({
+              word: parts[wIdx],
+              start: formatTimestampValue(parts[sIdx], timePolicy),
+              end: formatTimestampValue(parts[eIdx], timePolicy)
+            });
+          }
+        });
+      } else if (mode === 'tuples') {
+        const wIdx = parseInt(document.getElementById('tupleWordIdx').value || '0', 10);
+        const sIdx = parseInt(document.getElementById('tupleStartIdx').value || '1', 10);
+        const eIdx = parseInt(document.getElementById('tupleEndIdx').value || '2', 10);
+
+        arr.forEach(item => {
+          if (!Array.isArray(item)) return;
+          if (item[wIdx] === undefined) return;
+          results.push({
+            word: String(item[wIdx]).trim(),
+            start: formatTimestampValue(item[sIdx], timePolicy),
+            end: formatTimestampValue(item[eIdx], timePolicy)
+          });
+        });
+      }
+
+      return results;
+    }
+
+    function autoDetectScriptStructure() {
+      document.getElementById('scriptParseMode').value = 'auto';
+      document.getElementById('scriptKeyCol').value = 'auto';
+      document.getElementById('scriptTextCol').value = 'auto';
+      runConversion(true);
+      showToast('Auto-detected script table structure');
+    }
+
+    function formatBeatKey(rawKey, mode) {
+      const trimmed = String(rawKey || '').trim();
+      if (!trimmed) return '«?»';
+      if (mode === 'raw') return trimmed;
+      const inner = trimmed.replace(/^[«<\[\(]+|[»>\]\)]+$/g, '').trim();
+      return `«${inner}»`;
+    }
+
+    function parseScriptStructure() {
+      const rawScript = document.getElementById('scriptInput').value || '';
+      const lines = rawScript.split(/\r?\n/);
+
+      const parseMode = document.getElementById('scriptParseMode').value;
+      const keyColSetting = document.getElementById('scriptKeyCol').value;
+      const textColSetting = document.getElementById('scriptTextCol').value;
+      const keyFormatMode = document.getElementById('beatKeyFormat').value;
+
+      let secRegex;
+      try {
+        secRegex = new RegExp(document.getElementById('sectionRegexInput').value || '^#{1,4}\\s+(.+)$');
+      } catch (_) {
+        secRegex = /^#{1,4}\s+(.+)$/;
+      }
+
+      const sections = [];
+      let currentSection = null;
+
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        if (/^LAST\s+KEY\s*:/i.test(trimmed)) return;
+
+        // Check Section Heading (ignore H1 document title `# Title` if `## Section` is used, unless it has a number)
+        if (/^#{2,4}\s+/.test(trimmed) || (secRegex.test(trimmed) && !/^#\s+/.test(trimmed))) {
+          const m = trimmed.match(secRegex) || trimmed.match(/^#{1,4}\s+(.+)$/);
+          if (m && m[1]) {
+            currentSection = { title: m[1].trim(), beats: [] };
+            sections.push(currentSection);
+            return;
+          }
+        }
+
+        // Check Markdown Table Row
+        if ((parseMode === 'auto' || parseMode === 'table') && trimmed.startsWith('|') && trimmed.endsWith('|')) {
+          const cells = trimmed.slice(1, -1).split('|').map(c => c.trim());
+          if (cells.length >= 2) {
+            // Skip separator `| --- | --- |` or header `| Key | Script Line |`
+            if (cells.every(c => /^[:\-]+$/.test(c))) return;
+            if (/^key$/i.test(cells[0].replace(/[^a-zA-Z]/g, '')) && /script|line|text/i.test(cells[1])) return;
+
+            let keyIdx = keyColSetting === 'auto'
+              ? cells.findIndex(c => /«[^»]+»|^\d+$/.test(c))
+              : parseInt(keyColSetting, 10);
+
+            if (keyIdx < 0 || keyIdx >= cells.length) return;
+
+            let textIdx = textColSetting === 'auto'
+              ? keyIdx + 1
+              : parseInt(textColSetting, 10);
+
+            if (textIdx >= cells.length) textIdx = cells.length - 1;
+
+            const rawKey = cells[keyIdx];
+            const scriptLine = cells[textIdx];
+            if (!rawKey || !scriptLine) return;
+
+            if (!currentSection) {
+              currentSection = { title: '0. Main Section', beats: [] };
+              sections.push(currentSection);
+            }
+
+            currentSection.beats.push({
+              key: formatBeatKey(rawKey, keyFormatMode),
+              scriptLine: scriptLine.trim(),
+              matchedWords: []
+            });
+            return;
+          }
+        }
+
+        // Check Inline Beat format e.g. `«1» There was a time...`
+        if (parseMode === 'auto' || parseMode === 'inline') {
+          const inlineMatch = trimmed.match(/^(«[^»]+»|\[\d+\])\s*[\|\-:]*\s+(.+)$/);
+          if (inlineMatch) {
+            if (!currentSection) {
+              currentSection = { title: '0. Main Section', beats: [] };
+              sections.push(currentSection);
+            }
+            currentSection.beats.push({
+              key: formatBeatKey(inlineMatch[1], keyFormatMode),
+              scriptLine: inlineMatch[2].trim(),
+              matchedWords: []
+            });
+          }
+        }
+      });
+
+      return sections.filter(s => s.beats.length > 0);
+    }
+
+    /* =========================================================================
+       INTELLIGENT GLOBAL SEQUENCE ALIGNER (DYNAMIC PROGRAMMING + BOUNDARY POLISH)
+       Fixes beat drift caused by numbers ("2" vs "two", "1,000th" vs "thousandth"),
+       compound words ("month-to-month" vs "month to month"), and homophones
+       ("Crumbl" vs "crumble").
+       ========================================================================= */
+    const CANONICAL_NUMBERS = {
+      'zero': '0', 'one': '1', 'first': '1st', 'two': '2', 'second': '2nd',
+      'three': '3', 'third': '3rd', 'four': '4', 'fourth': '4th',
+      'five': '5', 'fifth': '5th', 'six': '6', 'sixth': '6th',
+      'seven': '7', 'seventh': '7th', 'eight': '8', 'eighth': '8th',
+      'nine': '9', 'ninth': '9th', 'ten': '10', 'tenth': '10th',
+      'eleven': '11', 'twelve': '12', 'thirteen': '13', 'fourteen': '14',
+      'fifteen': '15', 'sixteen': '16', 'seventeen': '17', 'eighteen': '18',
+      'nineteen': '19', 'twenty': '20', 'thirty': '30', 'forty': '40',
+      'fifty': '50', 'sixty': '60', 'seventy': '70', 'eighty': '80',
+      'ninety': '90', 'hundred': '100', 'hundredth': '100th',
+      'thousand': '1000', 'thousandth': '1000th', '1000th': '1000th',
+      'million': '1000000', 'billion': '1000000000'
+    };
+
+    const COMMON_STOPWORDS = new Set([
+      'the', 'a', 'an', 'in', 'on', 'of', 'to', 'and', 'or', 'for', 'with', 'at', 'by', 'from', 'it', 'is', 'was', 'were', 'had', 'that'
+    ]);
+
+    // Normalizes any script or transcript token into a canonical comparable string
+    function normalizeToken(rawStr) {
+      if (!rawStr) return '';
+      // Remove commas inside numbers (e.g., "1,000th" -> "1000th", "$350,000" -> "350000")
+      let s = String(rawStr).toLowerCase().replace(/(\d),(\d)/g, '$1$2');
+      // Strip leading/trailing punctuation and apostrophes
+      s = s.replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, '').replace(/['’]s$/g, '').replace(/['’]/g, '');
+      if (!s) return '';
+
+      // Brand / phonetic normalizations
+      if (s === 'crumble' || s === 'crumbls' || s === 'crumbles') s = 'crumbl';
+      if (s === 'cookies') s = 'cookie';
+      if (s === 'mcdonalds') s = 'mcdonald';
+
+      if (CANONICAL_NUMBERS[s]) return CANONICAL_NUMBERS[s];
+      return s;
+    }
+
+    function hasSentenceEndPunctuation(rawWord) {
+      return /[.!?]["'”’)]*$/.test(String(rawWord || '').trim());
+    }
+
+    function hasClausePunctuation(rawWord) {
+      return /[,;:—\-]["'”’)]*$/.test(String(rawWord || '').trim());
+    }
+
+    // Computes similarity score between a normalized script token and normalized transcript word
+    function tokenSimilarityScore(normS, normT) {
+      if (!normS || !normT) return -2.0;
+      if (normS === normT) {
+        // Distinctive content words get a higher anchor reward than common stopwords ("the", "in", "a")
+        return COMMON_STOPWORDS.has(normS) ? 2.2 : 4.5;
+      }
+
+      // Check prefix / stem match (e.g., "store" vs "stores", "opening" vs "opened")
+      if (normS.length >= 4 && normT.length >= 4) {
+        if (normS.startsWith(normT) || normT.startsWith(normS)) {
+          return 3.2;
+        }
+        // Levenshtein edit distance for minor ASR spelling differences
+        const dist = levenshteinDistance(normS, normT);
+        const maxLen = Math.max(normS.length, normT.length);
+        const ratio = 1 - dist / maxLen;
+        if (ratio >= 0.75) return 3.0;
+        if (ratio >= 0.60) return 1.2;
+      }
+
+      // Partial number match (e.g. "350000" vs "350")
+      if (/^\d+$/.test(normS) && /^\d+$/.test(normT)) {
+        if (normS.includes(normT) || normT.includes(normS)) return 2.5;
+      }
+
+      return -2.2; // Mismatch penalty
+    }
+
+    function levenshteinDistance(a, b) {
+      if (a === b) return 0;
+      const m = a.length, n = b.length;
+      if (Math.abs(m - n) > 4) return Math.abs(m - n);
+      const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+      for (let i = 0; i <= m; i++) dp[i][0] = i;
+      for (let j = 0; j <= n; j++) dp[0][j] = j;
+      for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+          dp[i][j] = Math.min(
+            dp[i - 1][j] + 1,
+            dp[i][j - 1] + 1,
+            dp[i - 1][j - 1] + cost
+          );
+        }
+      }
+      return dp[m][n];
+    }
+
+    // Expands script beat line into fine-grained tokens (splitting hyphenated compounds like "month-to-month" and "$350,000")
+    function expandScriptBeatTokens(scriptLine, beatIdx) {
+      if (!scriptLine) return [];
+      const rawSpaceTokens = scriptLine.trim().split(/\s+/).filter(Boolean);
+      const expanded = [];
+
+      rawSpaceTokens.forEach((rawTok, idxInSpace) => {
+        // Split hyphenated words like "month-to-month" or "palm-oil" into sub-tokens so they align 1-to-1 with spoken words
+        const subParts = rawTok.split(/[-–—]+/).filter(Boolean);
+        subParts.forEach((sub, sIdx) => {
+          const isFirstInBeat = expanded.length === 0;
+          const isLastInBeat = (idxInSpace === rawSpaceTokens.length - 1) && (sIdx === subParts.length - 1);
+          const norm = normalizeToken(sub);
+          if (norm) {
+            expanded.push({
+              raw: sub,
+              norm,
+              beatIdx,
+              isFirstInBeat,
+              isLastInBeat,
+              endsSentence: hasSentenceEndPunctuation(sub),
+              endsClause: hasClausePunctuation(sub)
+            });
+          }
+
+          // If token has currency symbol like "$350,000" or "$80,000" and "dollars" isn't explicitly next,
+          // note that spoken audio often says "dollars" after currency figures
+          if (/^\$\d/.test(sub) && sIdx === subParts.length - 1) {
+            expanded.push({
+              raw: '(dollars)',
+              norm: 'dollar',
+              beatIdx,
+              isFirstInBeat: false,
+              isLastInBeat,
+              isOptionalCurrencyUnit: true,
+              endsSentence: hasSentenceEndPunctuation(sub),
+              endsClause: false
+            });
+          }
+          // Same for "%" -> spoken "percent"
+          if (/%$/.test(sub)) {
+            expanded.push({
+              raw: '(percent)',
+              norm: 'percent',
+              beatIdx,
+              isFirstInBeat: false,
+              isLastInBeat,
+              isOptionalCurrencyUnit: true,
+              endsSentence: hasSentenceEndPunctuation(sub),
+              endsClause: false
+            });
+          }
+        });
+      });
+
+      // Ensure last token in beat is marked isLastInBeat
+      if (expanded.length > 0) {
+        expanded.forEach(t => t.isLastInBeat = false);
+        expanded[expanded.length - 1].isLastInBeat = true;
+      }
+      return expanded;
+    }
+
+    // Stores current aligned state so user can manually nudge boundaries if needed
+    let currentAlignedSectionsState = null;
+    let currentLeftoverWordsState = [];
+
+    function alignWordsToBeats(sections, transcriptWords) {
+      const allBeats = [];
+      const scriptTokens = [];
+
+      sections.forEach(sec => {
+        sec.beats.forEach(beat => {
+          const bIdx = allBeats.length;
+          beat.beatIndex = bIdx;
+          beat.matchedWords = [];
+          beat.expectedTokens = expandScriptBeatTokens(beat.scriptLine, bIdx);
+          beat.expectedTokens.forEach(tok => scriptTokens.push(tok));
+          allBeats.push(beat);
+        });
+      });
+
+      const M = scriptTokens.length;
+      const N = transcriptWords.length;
+
+      if (M === 0 || N === 0) {
+        return { allBeats, leftoverWords: transcriptWords.slice(), consumedCount: 0 };
+      }
+
+      // Prepare normalized transcript tokens
+      const transTokens = transcriptWords.map((w, idx) => ({
+        index: idx,
+        raw: w.word,
+        norm: normalizeToken(w.word),
+        endsSentence: hasSentenceEndPunctuation(w.word),
+        endsClause: hasClausePunctuation(w.word),
+        wordObj: w
+      }));
+
+      /* -----------------------------------------------------------------------
+         GLOBAL SEQUENCE ALIGNMENT (Needleman-Wunsch / Semi-Global DP)
+         Aligns N transcript words to a prefix (or full sequence) of M script tokens.
+         Because the user might paste a partial transcript (e.g. first 20 words)
+         for a 68-beat script, we allow ending at ANY script token `i` without
+         penalizing unconsumed trailing script beats!
+         ----------------------------------------------------------------------- */
+      const GAP_SCRIPT = -1.1;     // Skipping a script word (or optional currency word)
+      const GAP_TRANS = -1.4;      // Extra spoken word in transcript
+
+      // Use typed arrays for fast DP over large scripts
+      const cols = N + 1;
+      const dp = new Float32Array((M + 1) * cols);
+      const ptr = new Uint8Array((M + 1) * cols); // 1 = diag (match/sub), 2 = up (skip script token), 3 = left (insert transcript word)
+
+      // Initialize base cases
+      for (let i = 1; i <= M; i++) {
+        const tok = scriptTokens[i - 1];
+        const stepCost = tok.isOptionalCurrencyUnit ? -0.1 : GAP_SCRIPT;
+        dp[i * cols + 0] = dp[(i - 1) * cols + 0] + stepCost;
+        ptr[i * cols + 0] = 2;
+      }
+      for (let j = 1; j <= N; j++) {
+        dp[0 * cols + j] = dp[0 * cols + (j - 1)] + GAP_TRANS;
+        ptr[0 * cols + j] = 3;
+      }
+
+      // Fill DP Matrix
+      for (let i = 1; i <= M; i++) {
+        const sTok = scriptTokens[i - 1];
+        const skipScriptPenalty = sTok.isOptionalCurrencyUnit ? -0.15 : GAP_SCRIPT;
+        const rowOffset = i * cols;
+        const prevRowOffset = (i - 1) * cols;
+
+        for (let j = 1; j <= N; j++) {
+          const tTok = transTokens[j - 1];
+          let matchScore = tokenSimilarityScore(sTok.norm, tTok.norm);
+
+          // Punctuation & Beat Boundary Alignment Bonus!
+          // If both the script token is at the end of a beat AND the transcript word ends with a period '.',
+          // give a strong structural anchor bonus so beat boundaries lock onto sentence endings!
+          if (sTok.isLastInBeat && tTok.endsSentence) {
+            matchScore += 2.0;
+          } else if (sTok.isLastInBeat && tTok.endsClause) {
+            matchScore += 0.8;
+          } else if (!sTok.isLastInBeat && tTok.endsSentence && sTok.endsSentence) {
+            matchScore += 1.0;
+          }
+
+          // Prevent a non-last script token from falsely consuming a period-ending transcript word if the next script token is the actual beat end
+          const candDiag = dp[prevRowOffset + (j - 1)] + matchScore;
+          const candUp = dp[prevRowOffset + j] + skipScriptPenalty;
+          const candLeft = dp[rowOffset + (j - 1)] + GAP_TRANS;
+
+          if (candDiag >= candUp && candDiag >= candLeft) {
+            dp[rowOffset + j] = candDiag;
+            ptr[rowOffset + j] = 1;
+          } else if (candUp >= candLeft) {
+            dp[rowOffset + j] = candUp;
+            ptr[rowOffset + j] = 2;
+          } else {
+            dp[rowOffset + j] = candLeft;
+            ptr[rowOffset + j] = 3;
+          }
+        }
+      }
+
+      // Find the best ending script token index `bestI` for all N transcript words
+      // (Supports partial transcripts where N words only cover the first K script tokens)
+      let bestI = M;
+      let bestScore = -Infinity;
+      for (let i = 1; i <= M; i++) {
+        const score = dp[i * cols + N];
+        if (score > bestScore) {
+          bestScore = score;
+          bestI = i;
+        }
+      }
+
+      // Backtrack from (bestI, N) to assign each transcript word `j-1` to a script token `i-1`
+      const wordBeatAssignment = new Int32Array(N).fill(-1);
+      let currI = bestI;
+      let currJ = N;
+
+      while (currI > 0 && currJ > 0) {
+        const move = ptr[currI * cols + currJ];
+        if (move === 1) {
+          wordBeatAssignment[currJ - 1] = scriptTokens[currI - 1].beatIdx;
+          currI--;
+          currJ--;
+        } else if (move === 2) {
+          currI--;
+        } else {
+          // Transcript insertion: inherit beatIdx of current script token
+          wordBeatAssignment[currJ - 1] = scriptTokens[Math.max(0, currI - 1)].beatIdx;
+          currJ--;
+        }
+      }
+      while (currJ > 0) {
+        wordBeatAssignment[currJ - 1] = 0;
+        currJ--;
+      }
+
+      // Enforce monotonic non-decreasing beat assignments
+      for (let j = 1; j < N; j++) {
+        if (wordBeatAssignment[j] < wordBeatAssignment[j - 1]) {
+          wordBeatAssignment[j] = wordBeatAssignment[j - 1];
+        }
+      }
+
+      /* -----------------------------------------------------------------------
+         PASS 2: BOUNDARY REFINEMENT POLISH
+         Inspects adjacent beats (Beat A -> Beat B) to ensure no boundary word
+         leaked across the border due to stopwords or numbers.
+         ----------------------------------------------------------------------- */
+      for (let pass = 0; pass < 2; pass++) {
+        for (let j = 0; j < N - 1; j++) {
+          const bLeft = wordBeatAssignment[j];
+          const bRight = wordBeatAssignment[j + 1];
+          if (bLeft === bRight || bLeft < 0 || bRight < 0) continue;
+
+          const beatA = allBeats[bLeft];
+          const beatB = allBeats[bRight];
+          if (!beatA || !beatB) continue;
+
+          const firstExpectedB = beatB.expectedTokens[0]?.norm;
+          const lastExpectedA = beatA.expectedTokens[beatA.expectedTokens.length - 1]?.norm;
+
+          // Case 1: Did the last word of Beat A actually match the FIRST word of Beat B
+          // while the word before it ended with a period '.'?
+          if (
+            firstExpectedB &&
+            transTokens[j].norm === firstExpectedB &&
+            j > 0 &&
+            (transTokens[j - 1].endsSentence || transTokens[j - 1].norm === lastExpectedA)
+          ) {
+            wordBeatAssignment[j] = bRight;
+          }
+
+          // Case 2: Did the first word of Beat B actually match the LAST word of Beat A
+          // (and has sentence-ending punctuation)?
+          if (
+            lastExpectedA &&
+            transTokens[j + 1].norm === lastExpectedA &&
+            transTokens[j + 1].endsSentence &&
+            transTokens[j + 1].norm !== firstExpectedB
+          ) {
+            wordBeatAssignment[j + 1] = bLeft;
+          }
+        }
+      }
+
+      // Populate beat.matchedWords from finalized assignments
+      for (let j = 0; j < N; j++) {
+        const bIdx = wordBeatAssignment[j];
+        if (bIdx >= 0 && bIdx < allBeats.length) {
+          allBeats[bIdx].matchedWords.push(transcriptWords[j]);
+        }
+      }
+
+      return { allBeats, leftoverWords: [], consumedCount: N };
+    }
+
+    // Allows user to manually shift a boundary word between adjacent beats in the Inspector
+    function nudgeBeatBoundary(beatIndex, direction) {
+      if (!currentAlignedSectionsState) return;
+      const allBeats = [];
+      currentAlignedSectionsState.forEach(sec => sec.beats.forEach(b => allBeats.push(b)));
+
+      const currentBeat = allBeats[beatIndex];
+      if (!currentBeat) return;
+
+      if (direction === 'first_to_prev' && beatIndex > 0) {
+        if (currentBeat.matchedWords.length === 0) return;
+        const word = currentBeat.matchedWords.shift();
+        allBeats[beatIndex - 1].matchedWords.push(word);
+        showToast(`Moved "${word.word}" to ${allBeats[beatIndex - 1].key}`);
+      } else if (direction === 'last_to_next' && beatIndex + 1 < allBeats.length) {
+        if (currentBeat.matchedWords.length === 0) return;
+        const word = currentBeat.matchedWords.pop();
+        allBeats[beatIndex + 1].matchedWords.unshift(word);
+        showToast(`Moved "${word.word}" to ${allBeats[beatIndex + 1].key}`);
+      } else if (direction === 'pull_from_prev' && beatIndex > 0) {
+        const prevBeat = allBeats[beatIndex - 1];
+        if (prevBeat.matchedWords.length === 0) return;
+        const word = prevBeat.matchedWords.pop();
+        currentBeat.matchedWords.unshift(word);
+        showToast(`Pulled "${word.word}" into ${currentBeat.key}`);
+      } else if (direction === 'pull_from_next' && beatIndex + 1 < allBeats.length) {
+        const nextBeat = allBeats[beatIndex + 1];
+        if (nextBeat.matchedWords.length === 0) return;
+        const word = nextBeat.matchedWords.shift();
+        currentBeat.matchedWords.push(word);
+        showToast(`Pulled "${word.word}" into ${currentBeat.key}`);
+      }
+
+      renderOutputFromCurrentState();
+    }
+
+    /* =========================================================================
+       MAIN CONVERSION & RECOMMENDED STRUCTURE GENERATOR
+       ========================================================================= */
+    function runConversion(recomputeAlignment = true) {
+      const transcriptWords = extractTranscriptWords();
+
+      if (recomputeAlignment || !currentAlignedSectionsState) {
+        const sections = parseScriptStructure();
+        const { leftoverWords } = alignWordsToBeats(sections, transcriptWords);
+        currentAlignedSectionsState = sections;
+        currentLeftoverWordsState = leftoverWords;
+      }
+
+      renderOutputFromCurrentState(transcriptWords.length);
+    }
+
+    function renderOutputFromCurrentState(totalTransWordsOverride = null) {
+      const sections = currentAlignedSectionsState || [];
+      const leftoverWords = currentLeftoverWordsState || [];
+      const layoutStyle = document.getElementById('outputLayoutStyle').value;
+      const hideEmptyBeats = document.getElementById('hideEmptyBeatsToggle')?.checked ?? true;
+      const includeUnmatched = document.getElementById('includeUnmatchedToggle').checked;
+
+      let totalBeatsCount = 0;
+      let consumedCount = 0;
+      sections.forEach(s => {
+        totalBeatsCount += s.beats.length;
+        s.beats.forEach(b => { consumedCount += b.matchedWords.length; });
+      });
+
+      const totalTransWords = totalTransWordsOverride !== null ? totalTransWordsOverride : consumedCount + leftoverWords.length;
+
+      // Update Header Stats
+      document.getElementById('scriptStatsBadge').textContent = `${sections.length} Sec · ${totalBeatsCount} Beats`;
+      document.getElementById('transcriptStatsBadge').textContent = `${totalTransWords} Words`;
+
+      // Build Recommended Structure Output
+      const outLines = [];
+
+      if (sections.length === 0 && totalTransWords > 0) {
+        const transcriptWords = extractTranscriptWords();
+        outLines.push('## 0. Transcript');
+        outLines.push('');
+        outLines.push('### «1»');
+        transcriptWords.forEach(w => {
+          outLines.push(`${w.word}|${w.start}|${w.end}`);
+        });
+      } else {
+        sections.forEach((sec) => {
+          const visibleBeats = hideEmptyBeats
+            ? sec.beats.filter(b => b.matchedWords.length > 0)
+            : sec.beats;
+
+          if (visibleBeats.length === 0 && hideEmptyBeats) return;
+
+          if (outLines.length > 0) outLines.push('');
+          outLines.push(`## ${sec.title}`);
+
+          visibleBeats.forEach(beat => {
+            if (layoutStyle === 'recommended') {
+              outLines.push('');
+              outLines.push(`### ${beat.key}`);
+              if (beat.matchedWords.length > 0) {
+                beat.matchedWords.forEach(w => {
+                  outLines.push(`${w.word}|${w.start}|${w.end}`);
+                });
+              }
+            } else {
+              // Compact Single-Line per Beat
+              const joinedWords = beat.matchedWords.map(w => `${w.word}|${w.start}|${w.end}`).join(' ');
+              outLines.push(`${beat.key} | ${joinedWords}`);
+            }
+          });
+        });
+
+        if (includeUnmatched && leftoverWords.length > 0) {
+          outLines.push('');
+          outLines.push('### «UNMATCHED_TRAILING»');
+          leftoverWords.forEach(w => {
+            outLines.push(`${w.word}|${w.start}|${w.end}`);
+          });
+        }
+      }
+
+      const finalOutput = outLines.join('\n').trim();
+      document.getElementById('outputTextarea').value = finalOutput;
+
+      // Render Alignment Inspector
+      renderAlignmentInspector(sections, totalTransWords, consumedCount, leftoverWords);
+
+      // Calculate Context Token Savings
+      updateCompressionTelemetry(finalOutput, consumedCount, totalTransWords);
+    }
+
+    function renderAlignmentInspector(sections, totalTransWords, consumedCount, leftoverWords) {
+      const container = document.getElementById('outputInspectorContainer');
+      let html = `
+        <div class="px-2.5 py-2 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-300 flex items-center justify-between">
+          <span><i class="fa-solid fa-sliders text-emerald-400 mr-1.5"></i>Verify or fine-tune word boundaries per beat</span>
+          <button onclick="runConversion(true)" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 transition">
+            <i class="fa-solid fa-rotate-right mr-1"></i>Reset Auto-Align
+          </button>
+        </div>
+      `;
+
+      sections.forEach(sec => {
+        html += `
+          <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+            <div class="px-3 py-2 bg-slate-800/70 border-b border-slate-800 text-xs font-bold text-emerald-400 flex items-center justify-between">
+              <span>## ${escapeHtml(sec.title)}</span>
+              <span class="text-[10px] text-slate-400 font-normal">${sec.beats.length} beats</span>
+            </div>
+            <div class="divide-y divide-slate-800/60 p-2 space-y-2">
+        `;
+
+        sec.beats.forEach(beat => {
+          const hasWords = beat.matchedWords.length > 0;
+          const firstTime = hasWords ? beat.matchedWords[0].start : '—';
+          const lastTime = hasWords ? beat.matchedWords[beat.matchedWords.length - 1].end : '—';
+
+          // Check boundary confidence (do first & last words match expected beat start/end?)
+          let isExactBoundary = false;
+          if (hasWords && beat.expectedTokens.length > 0) {
+            const firstMatch = tokenSimilarityScore(
+              beat.expectedTokens[0].norm,
+              normalizeToken(beat.matchedWords[0].word)
+            ) > 0;
+            const lastExp = beat.expectedTokens[beat.expectedTokens.length - 1].norm;
+            const lastMatch = tokenSimilarityScore(
+              lastExp,
+              normalizeToken(beat.matchedWords[beat.matchedWords.length - 1].word)
+            ) > 0;
+            isExactBoundary = firstMatch && lastMatch;
+          }
+
+          const statusColor = !hasWords
+            ? 'bg-slate-800 text-slate-500 border-slate-700'
+            : isExactBoundary
+            ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+            : 'bg-amber-500/15 text-amber-300 border-amber-500/30';
+
+          const bIdx = beat.beatIndex;
+
+          html += `
+            <div class="pt-2.5 first:pt-0 px-1.5">
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 rounded text-xs font-bold font-mono ${statusColor} border">${escapeHtml(beat.key)}</span>
+                  <span class="text-[11px] text-slate-400 font-mono">${firstTime} ➔ ${lastTime}</span>
+                  ${hasWords ? `<span class="text-[10px] px-1.5 py-0.2 rounded ${isExactBoundary ? 'text-emerald-400 bg-emerald-950/60' : 'text-amber-300 bg-amber-950/60'}">${beat.matchedWords.length} words</span>` : ''}
+                </div>
+                <!-- Manual Boundary Micro-Adjust Buttons -->
+                <div class="flex items-center gap-1">
+                  <button onclick="nudgeBeatBoundary(${bIdx}, 'first_to_prev')" title="Send 1st word to previous beat" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700 transition">
+                    ⬅ 1st
+                  </button>
+                  <button onclick="nudgeBeatBoundary(${bIdx}, 'pull_from_prev')" title="Pull last word from previous beat" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700 transition">
+                    +Prev
+                  </button>
+                  <button onclick="nudgeBeatBoundary(${bIdx}, 'pull_from_next')" title="Pull 1st word from next beat" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700 transition">
+                    +Next
+                  </button>
+                  <button onclick="nudgeBeatBoundary(${bIdx}, 'last_to_next')" title="Send last word to next beat" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700 transition">
+                    Last ➡
+                  </button>
+                </div>
+              </div>
+              <div class="text-[11px] text-slate-300 mb-1.5 italic bg-slate-950/60 px-2 py-1 rounded border border-slate-800/80">"${escapeHtml(beat.scriptLine)}"</div>
+              <div class="flex flex-wrap gap-1">
+                ${beat.matchedWords.map(w => `
+                  <span class="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800 text-[10px] font-mono text-cyan-300" title="${w.start} - ${w.end}">
+                    ${escapeHtml(w.word)}<span class="text-slate-500">|${w.start}</span>
+                  </span>
+                `).join('')}
+                ${!hasWords ? `<span class="text-[10px] text-slate-500">No transcript words in range for this beat</span>` : ''}
+              </div>
+            </div>
+          `;
+        });
+
+        html += `</div></div>`;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function updateCompressionTelemetry(finalOutput, consumedCount, totalTransWords) {
+      const rawScriptLen = document.getElementById('scriptInput').value.length;
+      const rawTransLen = document.getElementById('transcriptInput').value.length;
+      const totalRawChars = rawScriptLen + rawTransLen;
+      const outChars = finalOutput.length;
+
+      const savedPct = totalRawChars > 0
+        ? Math.max(0, Math.round((1 - (outChars / totalRawChars)) * 100))
+        : 0;
+
+      const rawTokensEst = Math.round(totalRawChars / 4);
+      const outTokensEst = Math.round(outChars / 4);
+
+      document.getElementById('compressionRatioBadge').textContent = `${savedPct}% Context Saved`;
+      document.getElementById('tokenCountCompare').textContent = `~${rawTokensEst.toLocaleString()} ➔ ~${outTokensEst.toLocaleString()} tokens`;
+
+      const healthEl = document.getElementById('alignmentHealthBadge');
+      if (totalTransWords === 0) {
+        healthEl.innerHTML = `<i class="fa-solid fa-circle-minus text-slate-500"></i><span>Awaiting Transcript</span>`;
+      } else if (consumedCount === totalTransWords) {
+        healthEl.innerHTML = `<i class="fa-solid fa-check-double text-emerald-400"></i><span>100% Words Aligned (${consumedCount}/${totalTransWords})</span>`;
+      } else {
+        healthEl.innerHTML = `<i class="fa-solid fa-circle-info text-cyan-400"></i><span>Aligned ${consumedCount}/${totalTransWords} words</span>`;
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    /* =========================================================================
+       SCENARIO LOADER (Tests Standard JSON, Renamed Keys, Combined Var, Tuples)
+       ========================================================================= */
+    function loadScenario(scenarioKey) {
+      document.getElementById('scriptInput').value = CRUMBL_SCRIPT_SAMPLE;
+
+      if (scenarioKey === 'crumbl_standard') {
+        const jsonObj = { words: SAMPLE_WORDS_LIST };
+        document.getElementById('transcriptInput').value = JSON.stringify(jsonObj, null, 2);
+        showToast('Loaded Standard Crumbl Script + Word JSON');
+      } else if (scenarioKey === 'renamed_keys') {
+        // Simulate a transcript tool that uses totally different key names: `items`, `token_text`, `t_in`, `t_out`
+        const renamedList = SAMPLE_WORDS_LIST.map(w => ({
+          token_text: w.word,
+          t_in: w.start_time,
+          t_out: w.end_time,
+          speaker_id: 1
+        }));
+        document.getElementById('transcriptInput').value = JSON.stringify({ transcript_items: renamedList }, null, 2);
+        showToast('Loaded Renamed Variables Scenario (token_text, t_in, t_out)');
+      } else if (scenarioKey === 'combined_single_var') {
+        // Simulate a transcript where all 3 values are packed inside a single property `"packed": "There | 00:00:00.000 - 00:00:00.297"`
+        const combinedList = SAMPLE_WORDS_LIST.map(w => ({
+          packed: `${w.word} | ${w.start_time} - ${w.end_time}`
+        }));
+        document.getElementById('transcriptInput').value = JSON.stringify({ stream: combinedList }, null, 2);
+        showToast('Loaded Single Combined Variable Scenario');
+      } else if (scenarioKey === 'tuple_array') {
+        // Simulate an array of arrays `[["There", "00:00:00.000", "00:00:00.297"], ...]`
+        const tupleList = SAMPLE_WORDS_LIST.map(w => [w.word, w.start_time, w.end_time]);
+        document.getElementById('transcriptInput').value = JSON.stringify(tupleList, null, 2);
+        showToast('Loaded Array of Tuples Scenario');
+      }
+
+      inspectAndPopulateTranscriptSchema();
+      runConversion();
+    }
+
+    /* =========================================================================
+       COPY & DOWNLOAD UTILITIES
+       ========================================================================= */
+    function copyOutput() {
+      const out = document.getElementById('outputTextarea');
+      if (!out.value) {
+        showToast('No output to copy', 'error');
+        return;
+      }
+      out.select();
+      document.execCommand('copy');
+      window.getSelection().removeAllRanges();
+      showToast('Recommended Structure copied to clipboard!');
+    }
+
+    function downloadOutput() {
+      const text = document.getElementById('outputTextarea').value;
+      if (!text) {
+        showToast('Nothing to download', 'error');
+        return;
+      }
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'compressed_script_transcript.txt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Downloaded compressed_script_transcript.txt');
+    }
+
+    // Initialize on load with the Crumbl Cookies dataset
+    window.onload = function () {
+      loadScenario('crumbl_standard');
+    };
+  </script>
+</body>
+</html>
