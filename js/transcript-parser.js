@@ -17,12 +17,12 @@ function parseTimeToSeconds(v) {
   let str = String(v).trim();
   if (!str) return null;
   str = str.replace(/s$/i, '');
-  const hms = str.match(/^(?:(\d+):)?(\d{1,2}):(\d{1,2})(?:[.,](\d+))?$/);
+  const hms = str.match(/^(?:(\d+):(\d{1,2})|(\d+)):(\d{1,2})(?:[.,](\d+))?$/);
   if (hms) {
     const h = parseInt(hms[1] || '0', 10);
-    const m = parseInt(hms[2], 10);
-    const s = parseInt(hms[3], 10);
-    const frac = hms[4] ? Number('0.' + hms[4]) : 0;
+    const m = parseInt(hms[2] !== undefined ? hms[2] : hms[3], 10);
+    const s = parseInt(hms[4], 10);
+    const frac = hms[5] ? Number('0.' + hms[5]) : 0;
     return h * 3600 + m * 60 + s + frac;
   }
   if (/^-?\d+(?:\.\d+)?(?:e-?\d+)?$/i.test(str)) return parseFloat(str);
@@ -469,17 +469,31 @@ const COMBINED_TIME_FIRST = new RegExp('^[\\s\\[(]*' + TS_PART + SEP_PART + TS_P
 function parseCombinedString(str) {
   const s = String(str || '').trim();
   if (!s) return null;
+  const trimWord = (w) => w.replace(/^[\s|,;:\-–—]+|[\s|,;:\-–—]+$/g, '');
+  let wordFirst = null, timeFirst = null;
   let m = s.match(COMBINED_WORD_FIRST);
   if (m) {
-    const word = m[1].replace(/^[\s|,;:\-–—]+|[\s|,;:\-–—]+$/g, '');
-    if (word) return { word, start: m[2], end: m[3] };
+    const word = trimWord(m[1]);
+    if (word) wordFirst = { word, start: m[2], end: m[3] };
   }
   m = s.match(COMBINED_TIME_FIRST);
   if (m) {
-    const word = m[3].replace(/^[\s|,;:\-–—]+|[\s|,;:\-–—]+$/g, '');
-    if (word && parseTimeToSeconds(word) === null) return { word, start: m[1], end: m[2] };
+    const word = trimWord(m[3]);
+    if (word && !/^\d+(?:[.,:]\d+)+s?$/.test(word.replace(/[\])]+$/, ''))) timeFirst = { word, start: m[1], end: m[2] };
   }
-  return null;
+  if (wordFirst && timeFirst) {
+    // Both readings fit, e.g. "0.000 0.297 2014". A "word" that is itself shaped like a timestamp
+    // (decimal / clock) or times that run backwards mean the other reading is the right one.
+    const plausibility = (p) => {
+      const a = parseTimeToSeconds(p.start), b = parseTimeToSeconds(p.end);
+      let score = (a !== null && b !== null && a <= b) ? 1 : 0;
+      if (/^\d+(?:[.,:]\d+)+s?$/.test(p.word.replace(/^[\[(]+|[\])]+$/g, ''))) score -= 1;
+      if (/^[\[(]/.test(p.word)) score -= 1;
+      return score;
+    };
+    return plausibility(timeFirst) > plausibility(wordFirst) ? timeFirst : wordFirst;
+  }
+  return wordFirst || timeFirst;
 }
 
 function parseSubtitleCues(raw) {

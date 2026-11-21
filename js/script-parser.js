@@ -41,7 +41,7 @@ const looksLikeBeatKey = (c) => /«[^»]+»/.test(c || '') || /^\[?\d+[a-z]?\]?$
 
 function analyzeHeaderRow(cells) {
   const keyIdx = cells.findIndex(c => /^(key|beat|beat key|beat #|#|id|no\.?|num(ber)?)$/i.test(c.replace(/[*_`]/g, '').trim()));
-  const textIdx = cells.findIndex(c => /script|line|narration|voice|\bvo\b|dialogue|spoken|copy|text/i.test(c) && !/visual|b-?roll|note|type|key/i.test(c));
+  const textIdx = cells.findIndex(c => /\b(script|lines?|narration|voice\s*-?over|voice|vo|dialogue|spoken|copy|text)\b/i.test(c) && !/visual|b-?roll|note|type|key/i.test(c));
   return { keyIdx, textIdx };
 }
 
@@ -79,6 +79,11 @@ function parseScriptStructure() {
   }
 
   const usesH2 = lines.some(l => /^\s*#{2,6}\s+\S/.test(l));
+  // When the script's beats use «n» keys, a line starting with "[26]" is a citation, not a beat
+  const usesGuillemetKeys = /«[^»\n]+»/.test(rawScript);
+  const INLINE_BEAT = usesGuillemetKeys
+    ? /^(?:[-*]\s+)?(«[^»]+»)\s*[|:\-–—.)]*\s*(.+)$/i
+    : /^(?:[-*]\s+)?(«[^»]+»|\[\d+[a-z]?\])\s*[|:\-–—.)]*\s*(.+)$/i;
   const sections = [];
   let currentSection = null;
   let currentTable = null;
@@ -172,7 +177,7 @@ function parseScriptStructure() {
 
     // Inline beats: "«1» There was a time…"  /  "- [1]: There was…"
     if (parseMode !== 'table') {
-      const im = trimmed.match(/^(?:[-*]\s+)?(«[^»]+»|\[\d+[a-z]?\])\s*[|:\-–—.)]*\s*(.+)$/i);
+      const im = trimmed.match(INLINE_BEAT);
       if (im) {
         pushBeat(im[1], im[2], li + 1);
         headingBeat = null;

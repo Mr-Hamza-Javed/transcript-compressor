@@ -117,32 +117,44 @@ function saveInputs() {
   try {
     localStorage.setItem(LS_SCRIPT, $('scriptInput').value);
     localStorage.setItem(LS_TRANSCRIPT, $('transcriptInput').value);
-  } catch (_) { /* storage full or disabled: ignore */ }
+  } catch (_) {
+    // Storage full (big transcript) or disabled: drop both, so a reload never restores
+    // a new script together with an older transcript
+    try { localStorage.removeItem(LS_SCRIPT); localStorage.removeItem(LS_TRANSCRIPT); } catch (__) { /* disabled */ }
+  }
 }
 
 function showAligningBadge() {
   $('alignmentHealthBadge').innerHTML = `<i class="fa-solid fa-spinner fa-spin text-cyan-400"></i><span>Aligning…</span>`;
 }
 
-function onInputChanged() {
-  clearTimeout(inputDebounceTimer);
-  inputDebounceTimer = setTimeout(() => {
-    saveInputs();
-    showAligningBadge();
-    setTimeout(() => runConversion(true), 0);
-  }, debounceDelay());
-}
+// Both inputs share one debounce timer. A transcript edit leaves a "re-read the transcript" flag
+// that survives a script edit made before the timer fires (otherwise the old transcript would be used).
+let pendingTranscriptInspect = null; // null, or { forceReset }
 
-function onTranscriptRawInput(forceReset = false) {
+function scheduleConversion() {
   clearTimeout(inputDebounceTimer);
   inputDebounceTimer = setTimeout(() => {
     saveInputs();
     showAligningBadge();
     setTimeout(() => {
-      inspectAndPopulateTranscriptSchema(forceReset === true);
+      if (pendingTranscriptInspect) {
+        const { forceReset } = pendingTranscriptInspect;
+        pendingTranscriptInspect = null;
+        inspectAndPopulateTranscriptSchema(forceReset);
+      }
       runConversion(true);
     }, 0);
   }, debounceDelay());
+}
+
+function onInputChanged() {
+  scheduleConversion();
+}
+
+function onTranscriptRawInput(forceReset = false) {
+  pendingTranscriptInspect = { forceReset: forceReset === true || !!(pendingTranscriptInspect && pendingTranscriptInspect.forceReset) };
+  scheduleConversion();
 }
 
 function setTranscriptMode(mode) {

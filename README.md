@@ -53,3 +53,17 @@ Koi install nahi chahiye. Poora folder download karein aur `index.html` browser 
 Sample cases: **Test Presets** menu (preset 5 "Messy Real Recording" mein saare common masle dikhaye gaye hain).
 
 Tafseeli maqsad: [docs/app_purpose_overview.md](docs/app_purpose_overview.md)
+
+## Tests
+
+No install needed (Node 18+):
+
+```bash
+npm test
+```
+
+- `tests/units.test.js` covers the small pieces: time parsing, JSON repair, `word|start|end` lines, script tables, word normalisation and matching.
+- `tests/pipeline.test.js` runs the whole app (script + transcript in, structure + issues out): every sample format, skipped and extra speech, partial transcripts, timestamps, script formats, input events and storage.
+- `tests/harness.js` loads the real `js/` files with a small fake DOM, so nothing needs a browser.
+
+Run the tests after every change. When you fix a bug, add a test that fails without the fix.
