@@ -11,7 +11,8 @@
   - Combined strings (`"There | 0.000 - 0.297"`), array of tuples, plain `word|start|end` lines, JSON Lines
   - SRT / VTT subtitles (word times cue ke andar estimate kiye jaate hain)
 - **Script formats:** markdown tables (columns kisi bhi order mein, header se pehchanta hai), inline `«1» text`, ya `### «1»` headings.
-- **Manual fine-tuning:** Alignment Check mein aik click se beat boundaries adjust karein.
+- **Manual fine-tuning:** **Beats** tab mein beat ke kinaare par `←` / `+` buttons se words agli/pichli beat mein bhejein. Har badlaav **Undo** ho sakta hai. **Needs review** filter sirf masle wali beats dikhata hai.
+- **Light / dark theme**, saaf empty states, aur har input ka apna Clear button (Undo ke saath).
 - **75–85% context/token saving.**
 
 ## Mismatch & error checks (Issues tab)
@@ -35,14 +36,14 @@ App batati hai ke script aur transcript kahan match nahi karte:
 ## File structure
 ```
 index.html                 Page layout (HTML only)
-css/styles.css             Custom styles (Tailwind CDN se baqi styling)
+css/styles.css             Poora design: colour tokens (light/dark), buttons, cards, beats, issues
 js/sample-data.js          Crumbl sample script + word-by-word transcript
 js/ui.js                   Buttons, tabs, toasts, app state, file open / drag & drop
 js/transcript-parser.js    Transcript reading: JSON, schema detection, timestamps, SRT/VTT
 js/script-parser.js        Script reading: sections, table / inline / heading beats
 js/aligner.js              Word ↔ beat alignment (dynamic programming) + mismatch detection
-js/render.js               Output text, Alignment Check, Issues tab, telemetry
-js/presets.js              Test Presets menu scenarios
+js/render.js               Output text, Beats tab (with undo), Issues tab, summary bar
+js/presets.js              Examples menu scenarios
 js/main.js                 Copy / download + app start
 ```
 `index.html` mein scripts isi order mein load hoti hain. Order na badlein, kyunke baad wali files pehle wali files ke functions use karti hain.
@@ -50,7 +51,9 @@ js/main.js                 Copy / download + app start
 ## Usage
 Koi install nahi chahiye. Poora folder download karein aur `index.html` browser mein khol dein. `css/` aur `js/` folders saath hone chahiyein. Files drag & drop bhi ho sakti hain. Aapke inputs browser mein save rehte hain (refresh par wapas aa jate hain).
 
-Sample cases: **Test Presets** menu (preset 5 "Messy Real Recording" mein saare common masle dikhaye gaye hain).
+Sample cases: **Examples** menu ("Messy recording" mein saare common masle dikhaye gaye hain).
+
+Layout: 1 Script → 2 Transcript → 3 Result. Paste karte hi matching khud ho jaati hai, koi button nahi dabana. Result mein **Copy** dabayein aur AI chat mein paste kar dein. Script/Transcript settings (slider icon) sirf tab kholein jab kuch ghalat detect ho.
 
 Tafseeli maqsad: [docs/app_purpose_overview.md](docs/app_purpose_overview.md)
 

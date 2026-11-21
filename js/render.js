@@ -1,6 +1,35 @@
 /* =========================================================================
-   MANUAL FINE-TUNING
+   MANUAL FINE-TUNING (with undo)
    ========================================================================= */
+// Snapshots of beat contents taken before each manual change; cleared when the alignment is recomputed
+let nudgeHistory = [];
+
+function snapshotAlignment() {
+  const al = state.alignment;
+  nudgeHistory.push({
+    alignment: al,
+    beats: al.allBeats.map(b => b.matchedWords.slice()),
+    leading: al.leading.slice(),
+    trailing: al.trailing.slice(),
+    statuses: al.words.map(w => w.status)
+  });
+  if (nudgeHistory.length > 200) nudgeHistory.shift();
+}
+
+function undoNudge() {
+  const snap = nudgeHistory.pop();
+  if (!snap || snap.alignment !== state.alignment) { nudgeHistory = []; return; }
+  const al = state.alignment;
+  al.allBeats.forEach((b, i) => { b.matchedWords = snap.beats[i]; });
+  al.leading = snap.leading;
+  al.trailing = snap.trailing;
+  al.words.forEach((w, i) => { w.status = snap.statuses[i]; });
+  renderOutputFromCurrentState();
+  showToast('Undone');
+}
+
+const undoAction = () => ({ label: 'Undo', onClick: undoNudge });
+
 function nudgeBeatBoundary(beatIndex, direction) {
   const al = state.alignment;
   if (!al) return;
@@ -8,60 +37,59 @@ function nudgeBeatBoundary(beatIndex, direction) {
   const currentBeat = allBeats[beatIndex];
   if (!currentBeat) return;
 
-  if (direction === 'first_to_prev' && beatIndex > 0) {
-    if (!currentBeat.matchedWords.length) return;
-    const word = currentBeat.matchedWords.shift();
-    allBeats[beatIndex - 1].matchedWords.push(word);
-    showToast(`Moved "${word.word}" to ${allBeats[beatIndex - 1].key}`);
-  } else if (direction === 'last_to_next' && beatIndex + 1 < allBeats.length) {
-    if (!currentBeat.matchedWords.length) return;
-    const word = currentBeat.matchedWords.pop();
-    allBeats[beatIndex + 1].matchedWords.unshift(word);
-    showToast(`Moved "${word.word}" to ${allBeats[beatIndex + 1].key}`);
-  } else if (direction === 'pull_from_prev' && beatIndex > 0) {
-    const prevBeat = allBeats[beatIndex - 1];
-    if (!prevBeat.matchedWords.length) return;
-    const word = prevBeat.matchedWords.pop();
-    currentBeat.matchedWords.unshift(word);
-    showToast(`Pulled "${word.word}" into ${currentBeat.key}`);
-  } else if (direction === 'pull_from_next' && beatIndex + 1 < allBeats.length) {
-    const nextBeat = allBeats[beatIndex + 1];
-    if (!nextBeat.matchedWords.length) return;
-    const word = nextBeat.matchedWords.shift();
-    currentBeat.matchedWords.push(word);
-    showToast(`Pulled "${word.word}" into ${currentBeat.key}`);
-  } else {
+  const plan = {
+    first_to_prev: [currentBeat, allBeats[beatIndex - 1], 'shift', 'push'],
+    last_to_next: [currentBeat, allBeats[beatIndex + 1], 'pop', 'unshift'],
+    pull_from_prev: [allBeats[beatIndex - 1], currentBeat, 'pop', 'unshift'],
+    pull_from_next: [allBeats[beatIndex + 1], currentBeat, 'shift', 'push']
+  }[direction];
+  if (!plan || !plan[0] || !plan[1] || !plan[0].matchedWords.length) {
     showToast('Nothing to move in that direction', 'warn');
     return;
   }
+  const [from, to, take, put] = plan;
+  snapshotAlignment();
+  const word = from.matchedWords[take]();
+  to.matchedWords[put](word);
   renderOutputFromCurrentState();
+  showToast(`Moved "${word.word}" from ${from.key} to ${to.key}`, 'success', undoAction());
 }
 
 function moveUnmatched(which) {
   const al = state.alignment;
   if (!al || !al.allBeats.length) return;
-  if (which === 'leading' && al.leading.length) {
-    const target = al.allBeats.find(b => b.matchedWords.length) || al.allBeats[0];
-    target.matchedWords.unshift(...al.leading);
-    showToast(`Moved ${al.leading.length} word(s) into ${target.key}`);
+  const list = which === 'leading' ? al.leading : al.trailing;
+  if (!list.length) return;
+  snapshotAlignment();
+  let target;
+  if (which === 'leading') {
+    target = al.allBeats.find(b => b.matchedWords.length) || al.allBeats[0];
+    target.matchedWords.unshift(...list);
     al.leading = [];
-  } else if (which === 'trailing' && al.trailing.length) {
+  } else {
     const withWords = al.allBeats.filter(b => b.matchedWords.length);
-    const target = withWords[withWords.length - 1] || al.allBeats[al.allBeats.length - 1];
-    target.matchedWords.push(...al.trailing);
-    showToast(`Moved ${al.trailing.length} word(s) into ${target.key}`);
+    target = withWords[withWords.length - 1] || al.allBeats[al.allBeats.length - 1];
+    target.matchedWords.push(...list);
     al.trailing = [];
   }
+  // Inside a beat they are extra speech, not "outside the script" any more
+  list.forEach(w => { w.status = 'ins'; });
   renderOutputFromCurrentState();
+  showToast(`Moved ${list.length} word(s) into ${target.key}`, 'success', undoAction());
 }
 
 function focusBeat(beatIndex) {
+  if (inspectorFilter === 'review') {
+    const b = state.alignment && state.alignment.allBeats[beatIndex];
+    if (b && !beatNeedsReview(b)) setInspectorFilter('all');
+  }
   switchOutputTab('inspector');
   const el = $(`beat-card-${beatIndex}`);
   if (!el) return;
   el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  el.classList.remove('beat-flash');
+  void el.offsetWidth;
   el.classList.add('beat-flash');
-  setTimeout(() => el.classList.remove('beat-flash'), 1600);
 }
 
 /* =========================================================================
@@ -69,6 +97,7 @@ function focusBeat(beatIndex) {
    ========================================================================= */
 function runConversion(recomputeAlignment = true) {
   if (recomputeAlignment || !state.alignment) {
+    nudgeHistory = [];
     const tx = extractTranscriptWords();
     state.transcriptNotes = tx.notes;
     const sc = parseScriptStructure();
@@ -86,6 +115,43 @@ function runConversion(recomputeAlignment = true) {
 }
 
 const fmtWordLine = (w) => `${w.word}|${w.start}|${w.end}`;
+const plural = (n, one, many = one + 's') => `${n.toLocaleString()} ${n === 1 ? one : many}`;
+
+// Card subtitles, step markers and empty-state hints
+function updateInputStatus(sections, al, issues) {
+  const scriptText = $('scriptInput').value.trim();
+  const transcriptText = $('transcriptInput').value.trim();
+  const beats = al.allBeats.length;
+  const words = al.words.length;
+
+  const sSub = $('scriptStatsBadge');
+  sSub.textContent = !scriptText ? 'Paste your script'
+    : beats ? `${plural(beats, 'beat')} in ${plural(sections.length, 'section')}` : 'No beats found — check Script settings';
+  sSub.className = 'card-sub' + (scriptText && !beats ? ' err' : '');
+  $('scriptStep').classList.toggle('done', beats > 0);
+  $('scriptEmpty').classList.toggle('hidden', !!$('scriptInput').value);
+
+  const tSub = $('transcriptStatsBadge');
+  const txError = issues.some(i => i.level === 'error' && /transcript|json|timestamp|word list|words could/i.test(i.title));
+  tSub.textContent = !transcriptText ? 'Paste a word-level transcript' : words ? plural(words, 'word') : 'No words read';
+  $('transcriptSub').className = 'card-sub' + (transcriptText && (txError || !words) ? ' err' : '');
+  const pill = $('detectedFormatPill');
+  $('detectedFormatSep').classList.toggle('hidden', !(transcriptText && pill.textContent));
+  $('transcriptStep').classList.toggle('done', words > 0 && !txError);
+  $('transcriptEmpty').classList.toggle('hidden', !!$('transcriptInput').value);
+
+  const hasOutput = !!$('outputTextarea').value;
+  $('resultStep').classList.toggle('done', hasOutput && beats > 0 && words > 0);
+  $('outputEmpty').classList.toggle('hidden', hasOutput);
+  if (!hasOutput) {
+    $('outputEmptyTitle').textContent = 'Your result appears here';
+    $('outputEmptyText').textContent = !scriptText && !transcriptText
+      ? 'Add a script and a transcript. They are matched automatically as you type — no button to press.'
+      : !transcriptText ? 'Now add the transcript (step 2).'
+      : !scriptText ? 'Now add the script (step 1).'
+      : 'Nothing could be matched yet — see the Issues tab.';
+  }
+}
 
 function renderOutputFromCurrentState() {
   const al = state.alignment || { allBeats: [], words: [], leading: [], trailing: [], extraRuns: [], notes: [] };
@@ -96,9 +162,6 @@ function renderOutputFromCurrentState() {
   const words = al.words;
 
   al.allBeats.forEach(b => { b.stats = computeBeatStats(b, al); });
-
-  $('scriptStatsBadge').textContent = `${sections.length} Sec · ${al.allBeats.length} Beats`;
-  $('transcriptStatsBadge').textContent = `${words.length} Words`;
 
   const outLines = [];
   const pushBlock = (key, list) => {
@@ -142,6 +205,7 @@ function renderOutputFromCurrentState() {
   $('outputTextarea').value = finalOutput;
 
   const issues = buildIssues(al, includeUnmatched);
+  updateInputStatus(sections, al, issues);
   renderAlignmentInspector(sections, al);
   renderIssues(issues);
   updateBanner(issues);
@@ -183,7 +247,7 @@ function buildIssues(al, includeUnmatched) {
   const rate = matched / N;
   if (rate < 0.3) {
     add('error', `Script and transcript barely match — only ${Math.round(rate * 100)}% of spoken words were found in the script`,
-      'Check that this transcript is the recording of this script, and that the correct "Word Variable" is selected in the Schema Mapper.');
+      'Check that this transcript is the recording of this script, and that the correct "Word field" is selected in Transcript settings.');
   }
 
   const covered = beats.filter(b => b.matchedWords.length > 0);
@@ -283,7 +347,7 @@ function buildIssues(al, includeUnmatched) {
     const span = `${fmtClock(runWords[0].s)}–${fmtClock(runWords[runWords.length - 1].e)}`;
     if (r.kind === 'reworded') {
       add('warn', `${beats[r.target].key} seems reworded — matched to different spoken words (${span})`,
-        `Spoken: "${wordsText(runWords)}". Script: "${shorten(beats[r.target].scriptLine)}". Please verify in Alignment Check.`, r.target);
+        `Spoken: "${wordsText(runWords)}". Script: "${shorten(beats[r.target].scriptLine)}". Please verify in the Beats tab.`, r.target);
       return;
     }
     let hint = '';
@@ -295,7 +359,7 @@ function buildIssues(al, includeUnmatched) {
   const where = includeUnmatched ? 'kept in the output' : 'left out of the output ("Unmatched words" is off)';
   if (al.leading.length) {
     add('warn', `${al.leading.length} spoken word(s) before the script starts (${fmtClock(al.leading[0].s)}–${fmtClock(al.leading[al.leading.length - 1].e)})`,
-      `"${wordsText(al.leading)}" — ${where} as «UNMATCHED_LEADING». Use Alignment Check to move them into the first beat if they belong there.`);
+      `"${wordsText(al.leading)}" — ${where} as «UNMATCHED_LEADING». Use the Beats tab to move them into the first beat if they belong there.`);
   }
   if (al.trailing.length) {
     add('warn', `${al.trailing.length} spoken word(s) after the script ends (${fmtClock(al.trailing[0].s)}–${fmtClock(al.trailing[al.trailing.length - 1].e)})`,
@@ -309,10 +373,11 @@ function sortIssues(issues) {
   return issues.map((x, i) => ({ x, i })).sort((a, b) => (rank[a.x.level] - rank[b.x.level]) || (a.i - b.i)).map(o => o.x);
 }
 
-const ISSUE_STYLE = {
-  error: { icon: 'fa-circle-xmark text-rose-400', box: 'border-rose-500/40 bg-rose-500/10', label: 'Error' },
-  warn: { icon: 'fa-triangle-exclamation text-amber-400', box: 'border-amber-500/30 bg-amber-500/5', label: 'Warning' },
-  info: { icon: 'fa-circle-info text-cyan-400', box: 'border-slate-700 bg-slate-900', label: 'Note' }
+
+const ISSUE_ICON = {
+  error: 'fa-circle-xmark lvl-error',
+  warn: 'fa-triangle-exclamation lvl-warn',
+  info: 'fa-circle-info lvl-info'
 };
 
 function renderIssues(issues) {
@@ -320,33 +385,37 @@ function renderIssues(issues) {
   issues.forEach(i => { count[i.level]++; });
   const badge = $('issuesCountBadge');
   badge.textContent = count.error + count.warn;
-  badge.className = 'ml-0.5 px-1.5 rounded-full text-[10px] ' + (count.error ? 'bg-rose-600 text-white' : count.warn ? 'bg-amber-500 text-slate-950' : 'bg-slate-700 text-slate-200');
+  badge.className = 'count' + (count.error ? ' err' : count.warn ? ' warn' : '');
+  badge.classList.toggle('hidden', !(count.error + count.warn));
 
-  let html = `
-    <div class="px-2.5 py-2 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-300 flex flex-wrap items-center gap-3">
-      <span class="font-semibold text-slate-200"><i class="fa-solid fa-stethoscope text-emerald-400 mr-1.5"></i>Script ↔ Transcript check</span>
-      <span class="text-rose-300">${count.error} error(s)</span>
-      <span class="text-amber-300">${count.warn} warning(s)</span>
-      <span class="text-cyan-300">${count.info} note(s)</span>
+  const nothingYet = !$('scriptInput').value.trim() && !$('transcriptInput').value.trim();
+  let html = '';
+  if (nothingYet) {
+    html = `<div class="all-good"><i class="fa-regular fa-clipboard" style="color:var(--text-3)"></i>Problems found while matching the script and transcript are listed here.</div>`;
+  } else if (!issues.length) {
+    html = `<div class="all-good"><i class="fa-solid fa-circle-check"></i>No problems found — every beat matches the transcript.</div>`;
+  } else {
+    html += `<div class="issue-summary">
+      ${count.error ? `<span class="chip err">${plural(count.error, 'error')}</span>` : ''}
+      ${count.warn ? `<span class="chip warn">${plural(count.warn, 'warning')}</span>` : ''}
+      ${count.info ? `<span class="chip info">${plural(count.info, 'note')}</span>` : ''}
+      <span class="faint">Click an item with an arrow to see that beat.</span>
     </div>`;
-  if (!issues.length) {
-    html += `<div class="px-3 py-6 text-center text-xs text-emerald-300"><i class="fa-solid fa-circle-check mr-1.5"></i>No problems found — every beat matches the transcript.</div>`;
+    issues.forEach(issue => {
+      const level = ISSUE_ICON[issue.level] ? issue.level : 'info';
+      const clickable = issue.beatIndex !== null && issue.beatIndex !== undefined;
+      const tag = clickable ? 'button' : 'div';
+      html += `
+        <${tag} class="issue ${level}" ${clickable ? `onclick="focusBeat(${issue.beatIndex})" title="Show this beat"` : ''}>
+          <i class="fa-solid ${ISSUE_ICON[level]}"></i>
+          <span class="issue-body">
+            <span class="issue-title" style="display:block">${escapeHtml(issue.title)}</span>
+            ${issue.detail ? `<span class="issue-detail" style="display:block">${escapeHtml(issue.detail)}</span>` : ''}
+          </span>
+          ${clickable ? '<i class="fa-solid fa-arrow-right go"></i>' : ''}
+        </${tag}>`;
+    });
   }
-  issues.forEach(issue => {
-    const st = ISSUE_STYLE[issue.level] || ISSUE_STYLE.info;
-    const clickable = issue.beatIndex !== null && issue.beatIndex !== undefined;
-    html += `
-      <div ${clickable ? `onclick="focusBeat(${issue.beatIndex})" title="Show this beat in Alignment Check"` : ''} class="px-3 py-2 rounded-lg border ${st.box} text-[11px] ${clickable ? 'cursor-pointer hover:brightness-125' : ''}">
-        <div class="flex items-start gap-2">
-          <i class="fa-solid ${st.icon} mt-0.5"></i>
-          <div class="flex-1 min-w-0">
-            <div class="font-semibold text-slate-100">${escapeHtml(issue.title)}</div>
-            ${issue.detail ? `<div class="text-slate-400 mt-0.5 break-words">${escapeHtml(issue.detail)}</div>` : ''}
-          </div>
-          ${clickable ? '<i class="fa-solid fa-arrow-right text-slate-500 mt-0.5"></i>' : ''}
-        </div>
-      </div>`;
-  });
   $('outputIssuesContainer').innerHTML = html;
 }
 
@@ -356,15 +425,15 @@ function updateBanner(issues) {
   const text = $('schemaAlertText');
   const firstError = issues.find(i => i.level === 'error');
   if (firstError) {
-    banner.className = 'bg-rose-500/10 border-b border-rose-500/30 px-4 py-2 flex items-center justify-between gap-3 text-xs text-rose-200 shrink-0';
-    icon.className = 'fa-solid fa-circle-xmark text-rose-400';
+    banner.className = 'banner banner-error';
+    icon.className = 'fa-solid fa-circle-xmark';
     const more = issues.filter(i => i.level === 'error').length - 1;
     text.textContent = firstError.title + (more > 0 ? ` (+${more} more)` : '');
     $('bannerIssuesBtn').classList.remove('hidden');
     $('bannerMapperBtn').classList.toggle('hidden', !/transcript|json|word|timestamp|mapping/i.test(firstError.title));
   } else if (state.mappingMessage && $('transcriptInput').value.trim()) {
-    banner.className = 'bg-amber-500/10 border-b border-amber-500/30 px-4 py-2 flex items-center justify-between gap-3 text-xs text-amber-200 shrink-0';
-    icon.className = 'fa-solid fa-triangle-exclamation text-amber-400';
+    banner.className = 'banner banner-warn';
+    icon.className = 'fa-solid fa-triangle-exclamation';
     text.textContent = state.mappingMessage;
     $('bannerIssuesBtn').classList.add('hidden');
     $('bannerMapperBtn').classList.remove('hidden');
@@ -374,144 +443,189 @@ function updateBanner(issues) {
 }
 
 /* =========================================================================
-   ALIGNMENT INSPECTOR
+   BEATS VIEW (alignment check)
    ========================================================================= */
-const BEAT_STATUS_STYLE = {
-  ok: { chip: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', label: 'Matched' },
-  partial: { chip: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30', label: 'Small differences' },
-  poor: { chip: 'bg-amber-500/15 text-amber-300 border-amber-500/30', label: 'Poor match' },
-  missing: { chip: 'bg-rose-500/15 text-rose-300 border-rose-500/30', label: 'Not found' },
-  empty: { chip: 'bg-slate-800 text-slate-500 border-slate-700', label: 'No script text' }
+const BEAT_STATUS = {
+  ok: { chip: 'ok', label: 'Matched' },
+  partial: { chip: 'info', label: 'Small differences' },
+  poor: { chip: 'warn', label: 'Poor match' },
+  missing: { chip: 'err', label: 'Not found' },
+  empty: { chip: 'muted', label: 'No script text' }
 };
 
+let inspectorFilter = 'all'; // 'all' | 'review'
+
+function beatNeedsReview(b) {
+  const st = b.stats;
+  return !!st && (st.status === 'missing' || st.status === 'poor' || (st.status === 'partial' && st.coverage < 0.85));
+}
+
+function setInspectorFilter(f) {
+  inspectorFilter = f;
+  if (state.alignment) renderAlignmentInspector(state.sections || [], state.alignment);
+}
+
 function wordChip(w) {
-  let cls = 'bg-slate-950 text-cyan-300 border-slate-800';
+  let cls = '';
   let title = `${w.start} – ${w.end}`;
-  if (w.status === 'sub') { cls = 'bg-amber-950/50 text-amber-300 border-amber-500/50'; title += ` · heard "${w.word}" where the script says "${w.expected}"`; }
-  else if (w.status === 'ins') { cls = w.isFiller ? 'bg-slate-950 text-slate-500 border-slate-800' : 'bg-fuchsia-950/60 text-fuchsia-300 border-fuchsia-500/60 border-dashed'; title += w.isFiller ? ' · filler word' : ' · extra word (not in script)'; }
-  else if (w.status === 'unmatched') { cls = 'bg-rose-950/50 text-rose-300 border-rose-500/50'; title += ' · not part of the script'; }
-  if (w.estimated) title += ' · timestamp estimated';
-  return `<span class="px-1.5 py-0.5 rounded border ${cls} text-[10px] font-mono ${w.estimated ? 'italic' : ''}" title="${escapeHtml(title)}">${escapeHtml(w.word)}<span class="text-slate-500">|${w.estimated ? '~' : ''}${escapeHtml(w.start)}</span></span>`;
+  if (w.status === 'sub') { cls = 'sub'; title += ` · heard "${w.word}" where the script says "${w.expected}"`; }
+  else if (w.status === 'ins') { cls = w.isFiller ? 'filler' : 'ins'; title += w.isFiller ? ' · filler word' : ' · extra word (not in the script)'; }
+  else if (w.status === 'unmatched') { cls = 'unmatched'; title += ' · outside the script'; }
+  if (w.estimated) { cls += ' est'; title += ' · time estimated'; }
+  return `<span class="w ${cls}" title="${escapeHtml(title)}">${escapeHtml(w.word)}<span class="t">${w.estimated ? '~' : ''}${escapeHtml(w.start)}</span></span>`;
 }
 
 function unmatchedCard(kind, list) {
   if (!list.length) return '';
-  const label = kind === 'leading' ? '«UNMATCHED_LEADING» — spoken before the script starts' : '«UNMATCHED_TRAILING» — spoken after the script ends';
+  const label = kind === 'leading' ? 'Spoken before the script starts' : 'Spoken after the script ends';
   const btn = kind === 'leading' ? 'Move into first beat' : 'Move into last beat';
   return `
-    <div class="bg-rose-950/20 border border-rose-500/30 rounded-xl p-2.5">
-      <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-        <span class="text-[11px] font-semibold text-rose-300">${label}</span>
-        <button onclick="moveUnmatched('${kind}')" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700 transition">${btn}</button>
+    <div class="unmatched-card">
+      <div class="head">
+        <span><i class="fa-solid fa-comment-slash"></i> ${label} <span class="faint" style="font-weight:400">· ${plural(list.length, 'word')}</span></span>
+        <button class="btn btn-sm" onclick="moveUnmatched('${kind}')">${btn}</button>
       </div>
-      <div class="flex flex-wrap gap-1">${list.map(wordChip).join('')}</div>
+      <div class="words">${list.map(wordChip).join('')}</div>
+    </div>`;
+}
+
+function nudgeBtn(bIdx, dir, icon, title) {
+  return `<button class="nudge" onclick="nudgeBeatBoundary(${bIdx}, '${dir}')" title="${title}" aria-label="${title}">${icon}</button>`;
+}
+
+function beatCard(beat, bIdx, total) {
+  const st = beat.stats || { status: 'missing', marks: [], coverage: 0, extra: 0 };
+  const style = BEAT_STATUS[st.status] || BEAT_STATUS.missing;
+  const mw = beat.matchedWords;
+  const hasWords = mw.length > 0;
+  const statusLabel = st.status === 'partial' && st.coverage >= 0.85 ? `${plural(st.extra, 'extra word')}` : style.label;
+  const pct = st.status !== 'empty' && st.status !== 'missing' ? ` · ${Math.round(st.coverage * 100)}%` : '';
+  const scriptHtml = st.marks.length
+    ? st.marks.map(m => m.state === 'ok' ? escapeHtml(m.raw)
+        : m.state === 'sub' ? `<span class="m-sub" title="heard &quot;${escapeHtml(m.heard)}&quot;">${escapeHtml(m.raw)}</span>`
+        : `<span class="m-miss" title="not heard in the transcript">${escapeHtml(m.raw)}</span>`).join(' ')
+    : `<span class="faint">${escapeHtml(beat.scriptLine) || '(no script text)'}</span>`;
+
+  const left = bIdx > 0
+    ? (hasWords ? nudgeBtn(bIdx, 'first_to_prev', '<i class="fa-solid fa-arrow-left"></i>', 'Send this first word to the previous beat') : '') +
+      nudgeBtn(bIdx, 'pull_from_prev', '<i class="fa-solid fa-plus"></i>', 'Pull the last word of the previous beat into this one')
+    : '';
+  const right = bIdx < total - 1
+    ? nudgeBtn(bIdx, 'pull_from_next', '<i class="fa-solid fa-plus"></i>', 'Pull the first word of the next beat into this one') +
+      (hasWords ? nudgeBtn(bIdx, 'last_to_next', '<i class="fa-solid fa-arrow-right"></i>', 'Send this last word to the next beat') : '')
+    : '';
+
+  return `
+    <div id="beat-card-${bIdx}" class="beat st-${st.status}">
+      <div class="beat-head">
+        <span class="beat-key">${escapeHtml(beat.key)}</span>
+        <span class="beat-time">${hasWords ? `${escapeHtml(mw[0].start)} → ${escapeHtml(mw[mw.length - 1].end)}` : '—'}</span>
+        <span class="chip ${style.chip}">${statusLabel}${pct}</span>
+        ${hasWords ? `<span class="beat-count">${plural(mw.length, 'word')}</span>` : ''}
+      </div>
+      <div class="beat-script">${scriptHtml}</div>
+      <div class="words">
+        ${left}
+        ${mw.map(wordChip).join('')}
+        ${!hasWords ? '<span class="no-words">No spoken words matched this beat</span>' : ''}
+        ${right}
+      </div>
     </div>`;
 }
 
 function renderAlignmentInspector(sections, al) {
   const container = $('outputInspectorContainer');
+  const beats = al.allBeats || [];
+  if (!beats.length) {
+    container.innerHTML = `<div class="all-good"><i class="fa-solid fa-list-check" style="color:var(--text-3)"></i>Each script beat and the spoken words matched to it are shown here, so you can check and fix the boundaries.</div>`;
+    return;
+  }
+  const review = beats.filter(beatNeedsReview).length;
+  const filter = inspectorFilter;
   let html = `
-    <div class="px-2.5 py-2 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-300 flex flex-wrap items-center justify-between gap-2">
-      <span><i class="fa-solid fa-sliders text-emerald-400 mr-1.5"></i>Verify or fine-tune word boundaries per beat</span>
-      <button onclick="runConversion(true)" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 transition">
-        <i class="fa-solid fa-rotate-right mr-1"></i>Reset Auto-Align
-      </button>
-    </div>
-    <div class="px-2.5 text-[10px] text-slate-500 flex flex-wrap gap-x-3 gap-y-1">
-      <span><span class="text-cyan-300">■</span> matched</span>
-      <span><span class="text-amber-300">■</span> heard differently</span>
-      <span><span class="text-fuchsia-300">■</span> extra (not in script)</span>
-      <span><span class="text-rose-300 line-through">abc</span> script word not heard</span>
-      <span class="italic">~ estimated time</span>
-    </div>`;
-
-  html += unmatchedCard('leading', al.leading || []);
-
-  sections.forEach(sec => {
-    const problems = sec.beats.filter(b => b.stats && ['missing', 'poor'].includes(b.stats.status)).length;
-    html += `
-      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-        <div class="px-3 py-2 bg-slate-800/70 border-b border-slate-800 text-xs font-bold text-emerald-400 flex items-center justify-between">
-          <span>## ${escapeHtml(sec.title)}</span>
-          <span class="text-[10px] font-normal ${problems ? 'text-amber-300' : 'text-slate-400'}">${sec.beats.length} beats${problems ? ` · ${problems} need review` : ''}</span>
+    <div class="view-toolbar" style="margin:-12px -14px 0; position:sticky; top:-12px; z-index:2; background:var(--surface)">
+      <div class="toolbar-group">
+        <div class="seg seg-sm" role="group" aria-label="Show beats">
+          <button class="${filter === 'all' ? 'active' : ''}" onclick="setInspectorFilter('all')">All ${beats.length}</button>
+          <button class="${filter === 'review' ? 'active' : ''}" onclick="setInspectorFilter('review')">Needs review ${review}</button>
         </div>
-        <div class="divide-y divide-slate-800/60 p-2 space-y-2">`;
+      </div>
+      <div class="toolbar-group">
+        <button class="btn btn-sm btn-ghost" onclick="undoNudge()" ${nudgeHistory.length ? '' : 'disabled'} title="Undo the last manual change"><i class="fa-solid fa-rotate-left"></i>Undo</button>
+        <button class="btn btn-sm btn-ghost" onclick="runConversion(true)" title="Throw away manual changes and match again"><i class="fa-solid fa-arrows-rotate"></i>Re-match</button>
+      </div>
+    </div>
+    <div class="legend">
+      <span><span class="w">word<span class="t">0.0</span></span> matched</span>
+      <span><span class="w sub">word</span> heard differently</span>
+      <span><span class="w ins">word</span> extra (not in script)</span>
+      <span><span class="m-miss" style="color:var(--err);text-decoration:line-through">word</span> script word not heard</span>
+      <span>Hover a beat for <i class="fa-solid fa-arrow-left"></i> <i class="fa-solid fa-plus"></i> buttons to move words across the border.</span>
+    </div>`;
+  if (nudgeHistory.length) {
+    html += `<div class="notice"><i class="fa-solid fa-circle-info"></i>Manual changes are kept until you edit the script or transcript.</div>`;
+  }
 
-    sec.beats.forEach(beat => {
-      const st = beat.stats || { status: 'missing', marks: [], coverage: 0 };
-      const style = BEAT_STATUS_STYLE[st.status];
-      const hasWords = beat.matchedWords.length > 0;
-      const firstTime = hasWords ? beat.matchedWords[0].start : '—';
-      const lastTime = hasWords ? beat.matchedWords[beat.matchedWords.length - 1].end : '—';
-      const bIdx = beat.beatIndex;
-      const scriptHtml = st.marks.length
-        ? st.marks.map(m => m.state === 'ok' ? escapeHtml(m.raw)
-            : m.state === 'sub' ? `<span class="text-amber-300 not-italic underline decoration-dotted" title="heard &quot;${escapeHtml(m.heard)}&quot;">${escapeHtml(m.raw)}</span>`
-            : `<span class="text-rose-300 line-through" title="not heard in the transcript">${escapeHtml(m.raw)}</span>`).join(' ')
-        : `<span class="text-slate-500">${escapeHtml(beat.scriptLine) || '(no script text)'}</span>`;
-
-      html += `
-        <div id="beat-card-${bIdx}" class="pt-2.5 first:pt-0 px-1.5 rounded">
-          <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="px-2 py-0.5 rounded text-xs font-bold font-mono ${style.chip} border" title="${style.label}">${escapeHtml(beat.key)}</span>
-              <span class="text-[11px] text-slate-400 font-mono">${escapeHtml(firstTime)} ➔ ${escapeHtml(lastTime)}</span>
-              <span class="text-[10px] px-1.5 rounded ${style.chip} border">${st.status === 'partial' && st.coverage >= 0.85 ? `${st.extra} extra word(s)` : style.label}${st.status !== 'empty' && st.status !== 'missing' ? ` · ${Math.round(st.coverage * 100)}%` : ''}</span>
-              ${hasWords ? `<span class="text-[10px] text-slate-500">${beat.matchedWords.length} words</span>` : ''}
-            </div>
-            <div class="flex items-center gap-1">
-              <button onclick="nudgeBeatBoundary(${bIdx}, 'first_to_prev')" title="Send 1st word to previous beat" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700 transition">⬅ 1st</button>
-              <button onclick="nudgeBeatBoundary(${bIdx}, 'pull_from_prev')" title="Pull last word from previous beat" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700 transition">+Prev</button>
-              <button onclick="nudgeBeatBoundary(${bIdx}, 'pull_from_next')" title="Pull 1st word from next beat" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700 transition">+Next</button>
-              <button onclick="nudgeBeatBoundary(${bIdx}, 'last_to_next')" title="Send last word to next beat" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 border border-slate-700 transition">Last ➡</button>
-            </div>
-          </div>
-          <div class="text-[11px] text-slate-300 mb-1.5 italic bg-slate-950/60 px-2 py-1 rounded border border-slate-800/80">"${scriptHtml}"</div>
-          <div class="flex flex-wrap gap-1">
-            ${beat.matchedWords.map(wordChip).join('')}
-            ${!hasWords ? `<span class="text-[10px] text-slate-500">No transcript words in range for this beat</span>` : ''}
-          </div>
-        </div>`;
-    });
-    html += `</div></div>`;
+  if (filter === 'all') html += unmatchedCard('leading', al.leading || []);
+  let shown = 0;
+  sections.forEach(sec => {
+    const list = filter === 'review' ? sec.beats.filter(beatNeedsReview) : sec.beats;
+    if (!list.length) return;
+    shown += list.length;
+    const problems = sec.beats.filter(beatNeedsReview).length;
+    html += `
+      <div class="section-block">
+        <div class="section-head">${escapeHtml(sec.title)}<span class="${problems ? 'warn' : ''}">${plural(sec.beats.length, 'beat')}${problems ? ` · ${problems} to review` : ''}</span></div>
+        ${list.map(b => beatCard(b, b.beatIndex, beats.length)).join('')}
+      </div>`;
   });
+  if (filter === 'review' && !shown) {
+    html += `<div class="all-good"><i class="fa-solid fa-circle-check"></i>Nothing to review — every beat matches well.</div>`;
+  }
+  if (filter === 'all') html += unmatchedCard('trailing', al.trailing || []);
 
-  html += unmatchedCard('trailing', al.trailing || []);
   const scrollTop = container.scrollTop;
   container.innerHTML = html;
   container.scrollTop = scrollTop;
 }
 
 /* =========================================================================
-   TELEMETRY
+   SUMMARY BAR
    ========================================================================= */
 function updateCompressionTelemetry(finalOutput, al, issues) {
   const totalRawChars = $('scriptInput').value.length + $('transcriptInput').value.length;
   const outChars = finalOutput.length;
   const savedPct = totalRawChars > 0 ? Math.max(0, Math.round((1 - outChars / totalRawChars) * 100)) : 0;
 
-  $('compressionRatioBadge').textContent = `${savedPct}% Context Saved`;
-  $('tokenCountCompare').textContent = `~${Math.round(totalRawChars / 4).toLocaleString()} ➔ ~${Math.round(outChars / 4).toLocaleString()} est. tokens`;
+  $('compressionRatioBadge').textContent = `${savedPct}% smaller`;
+  $('compressionRatioBadge').className = 'chip ok';
+  $('savingsBox').classList.toggle('hidden', !outChars);
+  $('copyBtn').disabled = !outChars;
+  $('downloadBtn').disabled = !outChars;
+  $('tokenCountCompare').textContent = `~${Math.round(totalRawChars / 4).toLocaleString()} → ~${Math.round(outChars / 4).toLocaleString()} tokens`;
 
   const healthEl = $('alignmentHealthBadge');
   const errors = issues.filter(i => i.level === 'error').length;
   const warns = issues.filter(i => i.level === 'warn').length;
   const N = al.words.length;
+  const setHealth = (icon, html, clickable) => {
+    healthEl.innerHTML = `<i class="fa-solid ${icon}"></i><span>${html}</span>`;
+    healthEl.classList.toggle('clickable', clickable);
+    healthEl.onclick = clickable ? () => switchOutputTab('issues') : null;
+    healthEl.title = clickable ? 'Show issues' : '';
+  };
   if (errors) {
-    healthEl.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-400"></i><span class="text-rose-300">${errors} error(s) — click to see</span>`;
+    setHealth('fa-circle-xmark i-err', `<span class="err-text">${plural(errors, 'error')}</span> — click to see`, true);
     return;
   }
   if (!N) {
-    healthEl.innerHTML = `<i class="fa-solid fa-circle-minus text-slate-500"></i><span>Awaiting Transcript</span>`;
+    setHealth('fa-circle-minus i-wait', $('scriptInput').value.trim() ? 'Waiting for the transcript' : 'Waiting for script and transcript', false);
     return;
   }
   const beats = al.allBeats.filter(b => b.stats && b.stats.status !== 'empty');
   const found = beats.filter(b => b.matchedWords.length > 0).length;
   const matchPct = Math.round(al.words.filter(w => w.status === 'match').length / N * 100);
-  const summary = beats.length ? `${found}/${beats.length} beats · ${matchPct}% words match script` : `${N} words`;
-  if (warns) {
-    healthEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-400"></i><span>${summary} · <span class="text-amber-300">${warns} warning(s)</span></span>`;
-  } else {
-    healthEl.innerHTML = `<i class="fa-solid fa-check-double text-emerald-400"></i><span>${summary}</span>`;
-  }
+  const summary = beats.length ? `<b style="color:var(--text);font-weight:600">${found}/${beats.length}</b> beats found · ${matchPct}% of words match the script` : plural(N, 'word');
+  if (warns) setHealth('fa-triangle-exclamation i-warn', `${summary} · <span class="warn-text">${plural(warns, 'warning')}</span>`, true);
+  else setHealth('fa-circle-check i-ok', summary, false);
 }

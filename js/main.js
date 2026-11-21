@@ -14,7 +14,13 @@ async function copyOutput() {
     document.execCommand('copy');
     window.getSelection().removeAllRanges();
   }
-  showToast('Recommended Structure copied to clipboard!');
+  showToast('Result copied — paste it into your AI chat');
+  const btn = $('copyBtn');
+  if (btn) {
+    btn.innerHTML = '<i class="fa-solid fa-check"></i><span>Copied</span>';
+    clearTimeout(copyOutput.timer);
+    copyOutput.timer = setTimeout(() => { btn.innerHTML = '<i class="fa-regular fa-copy"></i><span>Copy</span>'; }, 1600);
+  }
 }
 
 function downloadOutput() {
@@ -37,6 +43,7 @@ function downloadOutput() {
 
 // Start: restore the user's last inputs, otherwise load the Crumbl sample
 window.onload = function () {
+  applyThemeIcon();
   setupDragAndDrop();
   let restored = false;
   try {

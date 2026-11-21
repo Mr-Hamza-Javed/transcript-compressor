@@ -335,7 +335,7 @@ function applyCandidate(cand) {
     $('tupleWordIdx').value = t.w;
     $('tupleStartIdx').value = t.s;
     $('tupleEndIdx').value = t.e;
-    pill.textContent = `Tuple Array [${t.w},${t.s},${t.e}]`;
+    pill.textContent = `Arrays [${t.w}, ${t.s}, ${t.e}]`;
     if (t.w !== 0 || t.s !== 1 || t.e !== 2) state.mappingMessage = `Array-of-arrays detected. Word is item ${t.w}, start ${t.s}, end ${t.e}.`;
     return;
   }
@@ -348,7 +348,7 @@ function applyCandidate(cand) {
       cand.keys.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`).join('');
     sel.value = key;
     $('combinedDelimiterInput').value = 'auto';
-    pill.textContent = key === '__self__' ? 'Combined String Array' : `Single Variable (${key})`;
+    pill.textContent = key === '__self__' ? 'One text value per word' : `Text field "${key}"`;
     state.mappingMessage = key === '__self__'
       ? 'Each item is one text string. Word and timestamps are split out automatically.'
       : `Single-variable format detected ("${key}"). Word and timestamps are split out automatically.`;
@@ -369,12 +369,12 @@ function applyCandidate(cand) {
   const isStandard = ['word', 'text', 'punctuated_word'].includes(m.word) &&
     ['start_time', 'start'].includes(m.start) && ['end_time', 'end'].includes(m.end);
   if (!m.word || !m.start || !m.end) {
-    pill.textContent = 'Needs mapping';
-    state.mappingMessage = `Could not find ${[!m.word && 'a word', !m.start && 'a start-time', !m.end && 'an end-time'].filter(Boolean).join(', ')} variable automatically in: ${keys.join(', ')}. Please pick it in the Schema Mapper.`;
+    pill.textContent = 'Fields need checking';
+    state.mappingMessage = `Could not find ${[!m.word && 'a word', !m.start && 'a start-time', !m.end && 'an end-time'].filter(Boolean).join(', ')} variable automatically in: ${keys.join(', ')}. Please pick it in Transcript settings.`;
   } else if (isStandard) {
-    pill.textContent = `Mapped: ${m.word} / ${m.start} / ${m.end}`;
+    pill.textContent = `Fields: ${m.word}, ${m.start}, ${m.end}`;
   } else {
-    pill.textContent = `Mapped: ${m.word} / ${m.start} / ${m.end}`;
+    pill.textContent = `Fields: ${m.word}, ${m.start}, ${m.end}`;
     state.mappingMessage = `Custom JSON variables detected at "${cand.label}". Auto-mapped word = ${m.word}, start = ${m.start}, end = ${m.end}.`;
   }
 }
@@ -391,7 +391,7 @@ function inspectAndPopulateTranscriptSchema(forceReset = false) {
     state.schemaSignature = null;
     state.candidates = [];
     state.mappingMessage = null;
-    pill.textContent = 'Waiting for transcript';
+    pill.textContent = '';
     return;
   }
 
@@ -407,7 +407,7 @@ function inspectAndPopulateTranscriptSchema(forceReset = false) {
     }
     state.schemaSignature = 'lines';
     setTranscriptMode('lines');
-    pill.textContent = /-->/.test(raw) ? 'Subtitles (SRT/VTT)' : 'Delimited Text Mode';
+    pill.textContent = /-->/.test(raw) ? 'Subtitles (SRT/VTT)' : 'word|start|end lines';
     return;
   }
 
@@ -436,7 +436,7 @@ function inspectAndPopulateTranscriptSchema(forceReset = false) {
       title: 'No list of words found in the transcript JSON',
       detail: 'The JSON was read, but it does not contain any array of words. A word-by-word transcript needs a list like "words": [{"word": "Hi", "start": 0.0, "end": 0.3}, …].'
     });
-    pill.textContent = 'No word list';
+    pill.textContent = 'No word list found';
     return;
   }
 
@@ -593,7 +593,7 @@ function extractTranscriptWords() {
         detail: `${info.error.message}${info.error.snippet ? ` — near: ${info.error.snippet}` : ''}. Common causes: a missing comma between items, a missing quote, or an unfinished copy-paste.`
       });
     } else {
-      notes.push({ level: 'error', title: 'Transcript could not be read', detail: 'Switch "Data Structure Mode" to Plain Text if this is not JSON.' });
+      notes.push({ level: 'error', title: 'Transcript could not be read', detail: 'Switch "Format" to Plain text if this is not JSON.' });
     }
     return { words: [], notes };
   }
@@ -601,7 +601,7 @@ function extractTranscriptWords() {
   const pathStr = $('jsonArrayPathSelect').value || '__root__';
   const arr = resolvePath(state.parsedJSON, pathStr);
   if (!arr.length) {
-    notes.push({ level: 'error', title: 'The selected "JSON Array Location" has no items', detail: 'Pick another location in the Schema Mapper.' });
+    notes.push({ level: 'error', title: 'The selected "Word list location" has no items', detail: 'Pick another location in Transcript settings.' });
     return { words: [], notes };
   }
 
@@ -624,7 +624,7 @@ function extractTranscriptWords() {
       }
       items.push({ word: w, startRaw: getByKeyPath(item, sKey), endRaw: getByKeyPath(item, eKey), kind });
     });
-    if (wKey && sKey && wKey === sKey) notes.push({ level: 'warn', title: 'Word and Start Time use the same variable', detail: 'Check the Schema Mapper.' });
+    if (wKey && sKey && wKey === sKey) notes.push({ level: 'warn', title: 'Word and Start time use the same field', detail: 'Check Transcript settings.' });
   } else if (mode === 'combined') {
     const srcKey = $('mapCombinedSourceKey').value;
     const delim = ($('combinedDelimiterInput').value || 'auto').trim();
@@ -658,7 +658,7 @@ function extractTranscriptWords() {
       notes.push({
         level: items.length ? 'warn' : 'error',
         title: `${failed} combined value(s) could not be split into word + start + end`,
-        detail: `Example: "${shorten(firstFail, 60)}". Check "Source Variable" and the split settings.`
+        detail: `Example: "${shorten(firstFail, 60)}". Check "Source field" and the split settings.`
       });
     }
   } else if (mode === 'tuples') {
@@ -672,10 +672,10 @@ function extractTranscriptWords() {
     });
   }
   if (wrongShape) {
-    notes.push({ level: 'warn', title: `${wrongShape} item(s) in the word list have a different shape and were skipped`, detail: 'Check "Data Structure Mode" in the Schema Mapper.' });
+    notes.push({ level: 'warn', title: `${wrongShape} item(s) in the word list have a different shape and were skipped`, detail: 'Check "Format" in Transcript settings.' });
   }
   if (!items.length && !notes.some(n => n.level === 'error')) {
-    notes.push({ level: 'error', title: 'No words could be read with the current mapping', detail: 'Open the Schema Mapper and check which variable holds the word and the timestamps.' });
+    notes.push({ level: 'error', title: 'No words could be read with the current mapping', detail: 'Open Transcript settings and check which variable holds the word and the timestamps.' });
   }
   return finalizeWords(items, policy, notes);
 }
@@ -727,10 +727,10 @@ function finalizeWords(items, policy, notes) {
     const med = median(durs.length ? durs : gaps);
     if (med !== null && med > 20000) {
       factor = 1e-7;
-      notes.push({ level: 'info', title: 'Timestamps look like 100-nanosecond ticks — converted to seconds', detail: 'Change "Timestamp Precision" if this is wrong.' });
+      notes.push({ level: 'info', title: 'Timestamps look like 100-nanosecond ticks — converted to seconds', detail: 'Change "Time units" if this is wrong.' });
     } else if (med !== null && med > 20) {
       factor = 0.001;
-      notes.push({ level: 'info', title: 'Timestamps look like milliseconds — converted to seconds', detail: `A typical word lasted ${Math.round(med)} units, which only makes sense in milliseconds. Change "Timestamp Precision" if this is wrong.` });
+      notes.push({ level: 'info', title: 'Timestamps look like milliseconds — converted to seconds', detail: `A typical word lasted ${Math.round(med)} units, which only makes sense in milliseconds. Change "Time units" if this is wrong.` });
     }
   }
   if (factor !== 1) {
@@ -754,7 +754,7 @@ function finalizeWords(items, policy, notes) {
     notes.push({
       level: 'error',
       title: 'No timestamps could be read',
-      detail: 'Every word is missing its start/end time. Check the Start/End Time variables in the Schema Mapper.'
+      detail: 'Every word is missing its start/end time. Check the Start/End time fields in Transcript settings.'
     });
     words.forEach((w, i) => { w.s = 0; w.e = 0; });
   } else if (missing) {
@@ -777,7 +777,7 @@ function finalizeWords(items, policy, notes) {
     notes.push({
       level: 'warn',
       title: `${missing} word(s) had no timestamp — estimated from neighbouring words`,
-      detail: `First one: "${firstMissing.word}" (now ~${firstMissing.s.toFixed(3)}s). These are marked with ~ in Alignment Check. Speech tools often drop times on numbers or names.`
+      detail: `First one: "${firstMissing.word}" (now ~${firstMissing.s.toFixed(3)}s). These are marked with ~ in the Beats tab. Speech tools often drop times on numbers or names.`
     });
   }
 

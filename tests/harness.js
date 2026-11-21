@@ -43,7 +43,10 @@ function makeElement(id, init = {}) {
       toggle: (c, force) => { const on = force === undefined ? !classes.has(c) : !!force; on ? classes.add(c) : classes.delete(c); return on; },
       contains: (c) => classes.has(c)
     },
-    addEventListener() {}, removeEventListener() {}, click() {}, select() {}, scrollIntoView() {},
+    _attrs: {}, offsetWidth: 0,
+    setAttribute(k, v) { this._attrs[k] = String(v); },
+    getAttribute(k) { return k in this._attrs ? this._attrs[k] : null; },
+    addEventListener() {}, removeEventListener() {}, click() {}, select() {}, scrollIntoView() {}, focus() {},
     appendChild() {}, removeChild() {},
     ...init
   };
@@ -101,7 +104,7 @@ function loadApp({ storage = {} } = {}) {
     vm.runInContext(fs.readFileSync(path.join(ROOT, 'js', file), 'utf8'), ctx, { filename: file });
   }
   // Capture toasts for assertions
-  vm.runInContext('showToast = (msg, type = "success") => __toasts.push({ msg, type });', Object.assign(ctx, { __toasts: toasts }));
+  vm.runInContext('showToast = (msg, type = "success", action = null) => __toasts.push({ msg, type, action });', Object.assign(ctx, { __toasts: toasts }));
 
   const run = (code) => vm.runInContext(code, ctx);
   const app = {

@@ -1,454 +1,323 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Script & Transcript Context Compressor</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Transcript Compressor</title>
+  <script>
+    // Apply the saved (or system) theme before the first paint
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('transcriptCompressor.theme'); } catch (e) {}
+      if (t !== 'light' && t !== 'dark') t = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="css/styles.css">
 </head>
-<body class="bg-slate-950 text-slate-100 h-full flex flex-col font-sans overflow-hidden">
+<body>
 
-  <!-- Top Header -->
-  <header class="bg-slate-900/95 border-b border-slate-800 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0 z-20">
-    <div class="flex items-center space-x-3">
-      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-slate-950 font-bold text-lg">
-        <i class="fa-solid fa-wand-magic-sparkles"></i>
-      </div>
-      <div>
-        <div class="flex items-center gap-2">
-          <h1 class="text-sm sm:text-base font-bold text-white tracking-wide">Script & Transcript Context Compressor</h1>
-          <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Recommended Structure v3</span>
-        </div>
-        <p class="text-[11px] text-slate-400 hidden sm:block">Auto-aligns word-level timestamps into Section & Beat hierarchies with adaptive schema mapping</p>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><i class="fa-solid fa-compress"></i></div>
+      <div style="min-width:0">
+        <h1>Transcript Compressor</h1>
+        <p>Matches a word-level transcript to your script's beats and gives you a compact version for AI.</p>
       </div>
     </div>
-
-    <!-- Header Controls / Presets -->
-    <div class="flex items-center flex-wrap gap-2">
-      <!-- Sample Presets Dropdown -->
-      <div class="relative inline-block text-left">
-        <button id="presetBtn" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition">
-          <i class="fa-solid fa-flask text-emerald-400"></i>
-          <span>Test Presets (Schema Variants)</span>
-          <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i>
+    <div class="topbar-actions">
+      <div class="menu-wrap">
+        <button id="presetBtn" class="btn btn-ghost" aria-haspopup="menu" aria-expanded="false" aria-controls="presetDropdown">
+          <i class="fa-solid fa-flask"></i><span>Examples</span><i class="fa-solid fa-chevron-down" style="font-size:10px"></i>
         </button>
-        <div id="presetDropdown" class="hidden absolute right-0 mt-1 w-72 max-h-[75vh] overflow-y-auto rounded-xl bg-slate-800 border border-slate-700 shadow-2xl py-1.5 z-50 text-xs">
-          <div class="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Load Sample Scenarios</div>
-          <button onclick="loadScenario('crumbl_standard')" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2">
-            <i class="fa-solid fa-cookie-bite text-pink-400 w-4"></i>
-            <div>
-              <div class="font-medium">1. Crumbl Script + Standard JSON</div>
-              <div class="text-[10px] text-slate-400">Keys: word, start_time, end_time</div>
-            </div>
-          </button>
-          <button onclick="loadScenario('renamed_keys')" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2">
-            <i class="fa-solid fa-shuffle text-amber-400 w-4"></i>
-            <div>
-              <div class="font-medium">2. Renamed JSON Variables</div>
-              <div class="text-[10px] text-slate-400">Keys: token_text, t_in, t_out</div>
-            </div>
-          </button>
-          <button onclick="loadScenario('combined_single_var')" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2">
-            <i class="fa-solid fa-compress text-cyan-400 w-4"></i>
-            <div>
-              <div class="font-medium">3. Combined Single-Variable JSON</div>
-              <div class="text-[10px] text-slate-400">e.g. {"entry": "There | 0.000 - 0.297"}</div>
-            </div>
-          </button>
-          <button onclick="loadScenario('tuple_array')" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2">
-            <i class="fa-solid fa-list-ol text-purple-400 w-4"></i>
-            <div>
-              <div class="font-medium">4. Array of Tuples Format</div>
-              <div class="text-[10px] text-slate-400">e.g. [["There", 0, 0.297], ...]</div>
-            </div>
-          </button>
-          <div class="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 border-t border-slate-700 mt-1">Real-World Tools & Problems</div>
-          <button onclick="loadScenario('messy_take')" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2">
-            <i class="fa-solid fa-triangle-exclamation text-rose-400 w-4"></i>
-            <div>
-              <div class="font-medium">5. Messy Real Recording</div>
-              <div class="text-[10px] text-slate-400">Intro ad-lib, skipped beat, retake, missing times</div>
-            </div>
-          </button>
-          <button onclick="loadScenario('assemblyai_ms')" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2">
-            <i class="fa-solid fa-stopwatch text-amber-400 w-4"></i>
-            <div>
-              <div class="font-medium">6. AssemblyAI (milliseconds)</div>
-              <div class="text-[10px] text-slate-400">Keys: text, start, end in ms</div>
-            </div>
-          </button>
-          <button onclick="loadScenario('whisper_segments')" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2">
-            <i class="fa-solid fa-microphone-lines text-emerald-400 w-4"></i>
-            <div>
-              <div class="font-medium">7. Whisper segments[].words[]</div>
-              <div class="text-[10px] text-slate-400">Words nested inside segments</div>
-            </div>
-          </button>
-          <button onclick="loadScenario('deepgram')" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2">
-            <i class="fa-solid fa-wave-square text-sky-400 w-4"></i>
-            <div>
-              <div class="font-medium">8. Deepgram (deeply nested)</div>
-              <div class="text-[10px] text-slate-400">results.channels[0].alternatives[0].words</div>
-            </div>
-          </button>
-          <button onclick="loadScenario('srt_subtitles')" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 flex items-center gap-2">
-            <i class="fa-solid fa-closed-captioning text-pink-400 w-4"></i>
-            <div>
-              <div class="font-medium">9. SRT Subtitles (sentence-level)</div>
-              <div class="text-[10px] text-slate-400">Word times estimated from each cue</div>
-            </div>
-          </button>
-          <div class="border-t border-slate-700 mt-1"></div>
-          <button onclick="clearInputs()" class="w-full text-left px-3 py-2 text-slate-300 hover:bg-slate-700 flex items-center gap-2">
-            <i class="fa-solid fa-eraser text-slate-400 w-4"></i>
-            <div class="font-medium">Clear both inputs</div>
-          </button>
+        <div id="presetDropdown" class="menu hidden" role="menu">
+          <div class="menu-label">Transcript formats</div>
+          <button role="menuitem" class="menu-item" onclick="loadScenario('crumbl_standard')"><i class="fa-solid fa-cookie-bite"></i><span><b>Standard word JSON</b><small>word, start_time, end_time</small></span></button>
+          <button role="menuitem" class="menu-item" onclick="loadScenario('renamed_keys')"><i class="fa-solid fa-shuffle"></i><span><b>Renamed fields</b><small>token_text, t_in, t_out</small></span></button>
+          <button role="menuitem" class="menu-item" onclick="loadScenario('combined_single_var')"><i class="fa-solid fa-compress"></i><span><b>One text value per word</b><small>{"packed": "There | 0.000 - 0.297"}</small></span></button>
+          <button role="menuitem" class="menu-item" onclick="loadScenario('tuple_array')"><i class="fa-solid fa-list-ol"></i><span><b>Arrays</b><small>[["There", 0, 0.297], …]</small></span></button>
+          <div class="menu-label">Real tools &amp; real problems</div>
+          <button role="menuitem" class="menu-item" onclick="loadScenario('messy_take')"><i class="fa-solid fa-triangle-exclamation"></i><span><b>Messy recording</b><small>Intro chatter, skipped beat, retake, missing times</small></span></button>
+          <button role="menuitem" class="menu-item" onclick="loadScenario('assemblyai_ms')"><i class="fa-solid fa-stopwatch"></i><span><b>AssemblyAI</b><small>Times in milliseconds</small></span></button>
+          <button role="menuitem" class="menu-item" onclick="loadScenario('whisper_segments')"><i class="fa-solid fa-microphone-lines"></i><span><b>Whisper</b><small>Words inside segments</small></span></button>
+          <button role="menuitem" class="menu-item" onclick="loadScenario('deepgram')"><i class="fa-solid fa-wave-square"></i><span><b>Deepgram</b><small>results.channels[0].alternatives[0].words</small></span></button>
+          <button role="menuitem" class="menu-item" onclick="loadScenario('srt_subtitles')"><i class="fa-solid fa-closed-captioning"></i><span><b>SRT subtitles</b><small>Sentence-level — word times are estimated</small></span></button>
+          <div class="menu-sep"></div>
+          <button role="menuitem" class="menu-item" onclick="clearInputs()"><i class="fa-solid fa-eraser"></i><span><b>Clear both inputs</b></span></button>
         </div>
       </div>
-
-      <button onclick="runConversion()" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 shadow-sm shadow-emerald-900/50 transition">
-        <i class="fa-solid fa-bolt"></i>
-        <span>Convert & Align Now</span>
-      </button>
-
-      <button onclick="copyOutput()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition">
-        <i class="fa-regular fa-copy text-cyan-400"></i>
-        <span>Copy Output</span>
-      </button>
-
-      <button onclick="downloadOutput()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition" title="Download Recommended Structure (.txt)">
-        <i class="fa-solid fa-download text-emerald-400"></i>
-      </button>
+      <button id="themeBtn" class="btn btn-ghost btn-icon" onclick="toggleTheme()" title="Switch light / dark theme" aria-label="Switch light / dark theme"><i id="themeIcon" class="fa-solid fa-moon"></i></button>
     </div>
   </header>
 
-  <!-- Notification Toast -->
-  <div id="toast" class="fixed top-14 right-5 z-50 transform transition-all duration-300 translate-y-[-20px] opacity-0 pointer-events-none px-4 py-2.5 rounded-xl shadow-2xl text-xs flex items-center gap-2 border bg-slate-800 border-slate-700 text-slate-100">
-    <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
-    <span id="toastMsg">Completed</span>
-  </div>
-
-  <!-- Schema Warning Banner (Appears automatically if unknown keys detected) -->
-  <div id="schemaAlertBanner" class="hidden bg-amber-500/10 border-b border-amber-500/30 px-4 py-2 flex items-center justify-between text-xs text-amber-200 shrink-0">
-    <div class="flex items-center gap-2">
-      <i id="schemaAlertIcon" class="fa-solid fa-triangle-exclamation text-amber-400"></i>
-      <span id="schemaAlertText">Different variable structure detected in Transcript! Please verify or map the fields below.</span>
+  <div id="schemaAlertBanner" class="hidden" role="status">
+    <div class="banner-text">
+      <i id="schemaAlertIcon" class="fa-solid fa-triangle-exclamation"></i>
+      <span id="schemaAlertText"></span>
     </div>
-    <div class="flex items-center gap-2 shrink-0">
-      <button id="bannerIssuesBtn" onclick="switchOutputTab('issues')" class="hidden px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 font-semibold border border-rose-500/40 transition">
-        See Issues
-      </button>
-      <button id="bannerMapperBtn" onclick="toggleTranscriptConfig(true)" class="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-semibold border border-amber-500/40 transition">
-        Open Field Mapper
-      </button>
+    <div class="banner-actions">
+      <button id="bannerIssuesBtn" class="btn btn-sm hidden" onclick="switchOutputTab('issues')">See issues</button>
+      <button id="bannerMapperBtn" class="btn btn-sm" onclick="toggleTranscriptConfig(true)">Transcript settings</button>
     </div>
   </div>
 
-  <!-- Main 3-Column Workspace -->
-  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-y-auto lg:overflow-hidden">
+  <main class="workspace">
+    <div class="inputs-col">
 
-    <!-- COLUMN 1: SCRIPT INPUT & PARSER MAPPER (4 Cols) -->
-    <section class="lg:col-span-4 flex flex-col min-h-[75vh] lg:min-h-0 border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-900/30 overflow-hidden">
-      <!-- Panel Bar -->
-      <div class="px-3.5 py-2 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between shrink-0">
-        <div class="flex items-center gap-2">
-          <span class="w-5 h-5 rounded-md bg-pink-500/15 border border-pink-500/30 text-pink-400 flex items-center justify-center text-xs font-bold">1</span>
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-200">Script Input (Sections & Beats)</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span id="scriptStatsBadge" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono">0 Sec · 0 Beats</span>
-          <button onclick="openFilePicker('script')" title="Open a script file (.md / .txt) — you can also drag & drop it onto the box" class="px-2 py-1 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
-            <i class="fa-regular fa-folder-open text-pink-400"></i>
-          </button>
-          <input id="scriptFileInput" type="file" accept=".md,.markdown,.txt,text/plain,text/markdown" class="hidden" onchange="handleFileChosen('script', this.files[0]); this.value='';">
-          <button onclick="toggleScriptConfig()" id="scriptConfigBtn" title="Configure Script Table Columns & Patterns" class="px-2 py-1 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1 transition">
-            <i class="fa-solid fa-sliders text-pink-400"></i>
-            <span>Map Script</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Collapsible Script Mapper Drawer -->
-      <div id="scriptConfigDrawer" class="hidden bg-slate-900 border-b border-slate-800 p-3 space-y-2.5 text-xs shrink-0">
-        <div class="flex items-center justify-between">
-          <span class="font-semibold text-pink-400 flex items-center gap-1.5"><i class="fa-solid fa-table-columns"></i> Script Structure Adaptation</span>
-          <button onclick="autoDetectScriptStructure()" class="text-[10px] text-emerald-400 hover:underline"><i class="fa-solid fa-wand-magic"></i> Auto-Detect</button>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-[10px] text-slate-400 mb-1">Beat Parser Mode</label>
-            <select id="scriptParseMode" onchange="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-pink-500">
-              <option value="auto">Auto (Markdown Table + Freeform)</option>
-              <option value="table">Markdown Table Rows (| col | col |)</option>
-              <option value="inline">Inline / Heading Beat Key («1» Text... or ### «1»)</option>
-            </select>
+      <!-- 1. SCRIPT -->
+      <section id="paneScript" class="card" aria-labelledby="scriptTitle">
+        <div class="card-head">
+          <div class="card-title">
+            <span id="scriptStep" class="step">1</span>
+            <div style="min-width:0">
+              <h2 id="scriptTitle">Script</h2>
+              <p id="scriptStatsBadge" class="card-sub">Paste your script</p>
+            </div>
           </div>
-          <div>
-            <label class="block text-[10px] text-slate-400 mb-1">Section Heading Prefix</label>
-            <input id="sectionRegexInput" type="text" value="^#{1,4}\s+(.+)$" oninput="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-pink-500" title="Regex to capture Section Header">
-          </div>
-        </div>
-        <div class="grid grid-cols-3 gap-2 pt-1">
-          <div>
-            <label class="block text-[10px] text-slate-400 mb-1">Key Table Col #</label>
-            <select id="scriptKeyCol" onchange="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
-              <option value="auto">Auto-find «#»</option>
-              <option value="0">Column 1</option>
-              <option value="1">Column 2</option>
-              <option value="2">Column 3</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-[10px] text-slate-400 mb-1">Script Text Col #</label>
-            <select id="scriptTextCol" onchange="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
-              <option value="auto" selected>Auto (Header / Next to Key)</option>
-              <option value="0">Column 1</option>
-              <option value="1">Column 2</option>
-              <option value="2">Column 3</option>
-              <option value="3">Column 4</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-[10px] text-slate-400 mb-1">Beat Key Format</label>
-            <select id="beatKeyFormat" onchange="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
-              <option value="guillemet">Keep «1»</option>
-              <option value="raw">Keep As-Is</option>
-              <option value="wrap">Force «Key»</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- Script Textarea -->
-      <div class="flex-1 flex flex-col relative overflow-hidden">
-        <textarea id="scriptInput" spellcheck="false"
-          placeholder="Paste your Markdown Script with ## Sections and | «1» | Script Line | tables here..."
-          oninput="onInputChanged()"
-          class="flex-1 w-full bg-slate-950/80 text-slate-200 code-font text-xs p-3.5 focus:outline-none resize-none leading-relaxed"></textarea>
-      </div>
-    </section>
-
-    <!-- COLUMN 2: WORD-BY-WORD TRANSCRIPT & DYNAMIC FIELD MAPPER (4 Cols) -->
-    <section class="lg:col-span-4 flex flex-col min-h-[75vh] lg:min-h-0 border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-900/30 overflow-hidden">
-      <!-- Panel Bar -->
-      <div class="px-3.5 py-2 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between shrink-0">
-        <div class="flex items-center gap-2">
-          <span class="w-5 h-5 rounded-md bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center text-xs font-bold">2</span>
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-200">Word-by-Word Transcript</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span id="transcriptStatsBadge" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-mono">0 Words</span>
-          <button onclick="openFilePicker('transcript')" title="Open a transcript file (.json / .srt / .vtt / .txt) — you can also drag & drop it onto the box" class="px-2 py-1 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
-            <i class="fa-regular fa-folder-open text-cyan-400"></i>
-          </button>
-          <input id="transcriptFileInput" type="file" accept=".json,.jsonl,.txt,.srt,.vtt,.csv,.tsv,application/json,text/plain" class="hidden" onchange="handleFileChosen('transcript', this.files[0]); this.value='';">
-          <button onclick="toggleTranscriptConfig()" id="transcriptConfigBtn" class="px-2 py-1 text-[11px] rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 flex items-center gap-1 transition">
-            <i class="fa-solid fa-diagram-project"></i>
-            <span>Schema Mapper</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Dynamic Transcript Field Mapper Drawer (Open by default or when needed so user sees how adaptable it is) -->
-      <div id="transcriptConfigDrawer" class="bg-slate-900 border-b border-slate-800 p-3 space-y-2.5 text-xs shrink-0">
-        <div class="flex items-center justify-between">
-          <span class="font-semibold text-cyan-400 flex items-center gap-1.5">
-            <i class="fa-solid fa-sliders"></i> Dynamic Transcript Schema Mapper
-          </span>
-          <span id="detectedFormatPill" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Auto-Mapped</span>
-        </div>
-
-        <!-- Mode Selector & Root Path -->
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-[10px] text-slate-400 mb-1">Data Structure Mode</label>
-            <select id="transcriptModeSelect" onchange="onTranscriptModeChange()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
-              <option value="objects">Separate Variables (JSON Objects)</option>
-              <option value="combined">Single Variable / Combined String</option>
-              <option value="tuples">Array of Arrays [word, start, end]</option>
-              <option value="lines">Plain Text / Delimited Lines</option>
-            </select>
-          </div>
-          <div id="arrayPathContainer">
-            <label class="block text-[10px] text-slate-400 mb-1">JSON Array Location</label>
-            <select id="jsonArrayPathSelect" onchange="onArrayPathChange()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500">
-              <option value="__root__">[Root Array]</option>
-              <option value="words" selected>words</option>
-            </select>
+          <div class="card-actions">
+            <button class="btn btn-ghost btn-icon" onclick="openFilePicker('script')" title="Open a script file (.md, .txt)" aria-label="Open script file"><i class="fa-regular fa-folder-open"></i></button>
+            <input id="scriptFileInput" type="file" accept=".md,.markdown,.txt,text/plain,text/markdown" class="hidden" onchange="handleFileChosen('script', this.files[0]); this.value='';">
+            <button id="scriptConfigBtn" class="btn btn-ghost btn-icon" onclick="toggleScriptConfig()" aria-expanded="false" aria-controls="scriptConfigDrawer" title="Script settings" aria-label="Script settings"><i class="fa-solid fa-sliders"></i></button>
+            <button id="scriptClearBtn" class="btn btn-ghost btn-icon" onclick="clearOne('script')" title="Clear script" aria-label="Clear script"><i class="fa-solid fa-xmark"></i></button>
           </div>
         </div>
 
-        <!-- MODE A: Separate Object Keys -->
-        <div id="modeObjectsBox" class="grid grid-cols-3 gap-2 pt-1">
-          <div>
-            <label class="block text-[10px] text-slate-400 mb-1">Word Variable</label>
-            <select id="mapWordKey" onchange="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-emerald-300 font-mono">
-              <option value="word">word</option>
-            </select>
+        <div id="scriptConfigDrawer" class="drawer hidden">
+          <div class="drawer-head">
+            <b>Script settings</b>
+            <button class="link-btn" onclick="autoDetectScriptStructure()"><i class="fa-solid fa-wand-magic-sparkles"></i> Reset to auto</button>
           </div>
-          <div>
-            <label class="block text-[10px] text-slate-400 mb-1">Start Time Variable</label>
-            <select id="mapStartKey" onchange="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-amber-300 font-mono">
-              <option value="start_time">start_time</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-[10px] text-slate-400 mb-1">End Time Variable</label>
-            <select id="mapEndKey" onchange="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-cyan-300 font-mono">
-              <option value="end_time">end_time</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- MODE B: Combined Single Variable / String Splitter -->
-        <div id="modeCombinedBox" class="hidden space-y-2 pt-1">
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block text-[10px] text-slate-400 mb-1">Source Variable (if Object)</label>
-              <select id="mapCombinedSourceKey" onchange="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-emerald-300 font-mono">
-                <option value="__self__">[Item is String itself]</option>
+          <div class="fields fields-2">
+            <div class="field">
+              <label for="scriptParseMode">Beat style</label>
+              <select id="scriptParseMode" class="select" onchange="runConversion()">
+                <option value="auto">Auto — tables, inline lines and headings</option>
+                <option value="table">Table rows only  (| «1» | text |)</option>
+                <option value="inline">Inline / heading only  («1» text, ### «1»)</option>
               </select>
             </div>
-            <div>
-              <label class="block text-[10px] text-slate-400 mb-1">Split Regex (auto = smart)</label>
-              <input id="combinedDelimiterInput" type="text" value="auto" oninput="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono" title="auto = smart split (finds the two timestamps, the rest is the word — safe for 1,000th or month-to-month). Or type your own split regex and set the part indexes below.">
+            <div class="field">
+              <label for="sectionRegexInput">Section heading pattern (regex)</label>
+              <input id="sectionRegexInput" type="text" value="^#{1,4}\s+(.+)$" class="input mono" oninput="runConversion()" spellcheck="false">
             </div>
           </div>
-          <div class="grid grid-cols-3 gap-2">
-            <div>
-              <label class="block text-[10px] text-slate-400 mb-1">Word Part Index</label>
-              <input id="combWordIdx" type="number" min="0" value="0" oninput="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono">
+          <div class="fields fields-3">
+            <div class="field">
+              <label for="scriptKeyCol">Beat key column</label>
+              <select id="scriptKeyCol" class="select" onchange="runConversion()">
+                <option value="auto">Auto (finds «1»)</option>
+                <option value="0">Column 1</option>
+                <option value="1">Column 2</option>
+                <option value="2">Column 3</option>
+              </select>
             </div>
-            <div>
-              <label class="block text-[10px] text-slate-400 mb-1">Start Part Index</label>
-              <input id="combStartIdx" type="number" min="0" value="1" oninput="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono">
+            <div class="field">
+              <label for="scriptTextCol">Script text column</label>
+              <select id="scriptTextCol" class="select" onchange="runConversion()">
+                <option value="auto" selected>Auto (header / next to key)</option>
+                <option value="0">Column 1</option>
+                <option value="1">Column 2</option>
+                <option value="2">Column 3</option>
+                <option value="3">Column 4</option>
+              </select>
             </div>
-            <div>
-              <label class="block text-[10px] text-slate-400 mb-1">End Part Index</label>
-              <input id="combEndIdx" type="number" min="0" value="2" oninput="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono">
+            <div class="field">
+              <label for="beatKeyFormat">Key format</label>
+              <select id="beatKeyFormat" class="select" onchange="runConversion()">
+                <option value="guillemet">«1»</option>
+                <option value="raw">As written</option>
+                <option value="wrap">Always «key»</option>
+              </select>
             </div>
           </div>
         </div>
 
-        <!-- MODE C: Tuples [word, start, end] -->
-        <div id="modeTuplesBox" class="hidden grid grid-cols-3 gap-2 pt-1">
-          <div>
-            <label class="block text-[10px] text-slate-400 mb-1">Word Array Index</label>
-            <input id="tupleWordIdx" type="number" min="0" value="0" oninput="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono">
+        <div class="editor-wrap">
+          <textarea id="scriptInput" class="editor" spellcheck="false" aria-label="Script" placeholder="Script" oninput="onInputChanged()"></textarea>
+          <div id="scriptEmpty" class="empty-state">
+            <div class="icon"><i class="fa-regular fa-file-lines"></i></div>
+            <b>Paste your script</b>
+            <p>Markdown with <code>## Sections</code> and beats like <code>| «1» | line |</code>, <code>«1» line</code> or <code>### «1»</code>. You can also drop a .md or .txt file here.</p>
+            <div class="actions">
+              <button class="btn btn-sm" onclick="openFilePicker('script')"><i class="fa-regular fa-folder-open"></i>Open file</button>
+              <button class="btn btn-sm btn-ghost" onclick="loadScenario('crumbl_standard')">Try an example</button>
+            </div>
           </div>
-          <div>
-            <label class="block text-[10px] text-slate-400 mb-1">Start Array Index</label>
-            <input id="tupleStartIdx" type="number" min="0" value="1" oninput="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono">
+        </div>
+      </section>
+
+      <!-- 2. TRANSCRIPT -->
+      <section id="paneTranscript" class="card" aria-labelledby="transcriptTitle">
+        <div class="card-head">
+          <div class="card-title">
+            <span id="transcriptStep" class="step">2</span>
+            <div style="min-width:0">
+              <h2 id="transcriptTitle">Transcript</h2>
+              <p id="transcriptSub" class="card-sub"><span id="transcriptStatsBadge">Paste a word-level transcript</span><span id="detectedFormatSep" class="hidden"> · </span><span id="detectedFormatPill"></span></p>
+            </div>
           </div>
-          <div>
-            <label class="block text-[10px] text-slate-400 mb-1">End Array Index</label>
-            <input id="tupleEndIdx" type="number" min="0" value="2" oninput="runConversion()" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono">
+          <div class="card-actions">
+            <button class="btn btn-ghost btn-icon" onclick="openFilePicker('transcript')" title="Open a transcript file (.json, .srt, .vtt, .txt)" aria-label="Open transcript file"><i class="fa-regular fa-folder-open"></i></button>
+            <input id="transcriptFileInput" type="file" accept=".json,.jsonl,.txt,.srt,.vtt,.csv,.tsv,application/json,text/plain" class="hidden" onchange="handleFileChosen('transcript', this.files[0]); this.value='';">
+            <button id="transcriptConfigBtn" class="btn btn-ghost btn-icon" onclick="toggleTranscriptConfig()" aria-expanded="false" aria-controls="transcriptConfigDrawer" title="Transcript settings — which fields hold the word and times" aria-label="Transcript settings"><i class="fa-solid fa-sliders"></i></button>
+            <button id="transcriptClearBtn" class="btn btn-ghost btn-icon" onclick="clearOne('transcript')" title="Clear transcript" aria-label="Clear transcript"><i class="fa-solid fa-xmark"></i></button>
           </div>
         </div>
 
-        <!-- Timestamp Precision Setting -->
-        <div class="flex items-center justify-between pt-1 border-t border-slate-800/80 text-[11px]">
-          <span class="text-slate-400">Timestamp Precision:</span>
-          <select id="timeFormatPolicy" onchange="runConversion()" class="bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-[11px] text-slate-200">
-            <option value="auto" selected>Auto (seconds, detects milliseconds) ➔ 0.297</option>
-            <option value="sec">Input is Seconds / HH:MM:SS ➔ 0.297</option>
-            <option value="ms_to_sec">Input is Milliseconds (297 ➔ 0.297)</option>
-            <option value="raw">Keep Original String Unchanged (00:00:00.297)</option>
-          </select>
+        <div id="transcriptConfigDrawer" class="drawer hidden">
+          <div class="drawer-head">
+            <b>Transcript settings</b>
+            <span class="faint" style="font-size:12px">Detected automatically — change only if something looks wrong</span>
+          </div>
+          <div class="fields fields-2">
+            <div class="field">
+              <label for="transcriptModeSelect">Format</label>
+              <select id="transcriptModeSelect" class="select" onchange="onTranscriptModeChange()">
+                <option value="objects">JSON objects (word / start / end fields)</option>
+                <option value="combined">JSON: one text value per word</option>
+                <option value="tuples">JSON arrays [word, start, end]</option>
+                <option value="lines">Plain text, SRT or VTT</option>
+              </select>
+            </div>
+            <div id="arrayPathContainer" class="field">
+              <label for="jsonArrayPathSelect">Word list location</label>
+              <select id="jsonArrayPathSelect" class="select mono" onchange="onArrayPathChange()">
+                <option value="__root__">[Root Array]</option>
+                <option value="words" selected>words</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="modeObjectsBox" class="fields fields-3">
+            <div class="field">
+              <label for="mapWordKey">Word field</label>
+              <select id="mapWordKey" class="select mono" onchange="runConversion()"><option value="word">word</option></select>
+            </div>
+            <div class="field">
+              <label for="mapStartKey">Start time field</label>
+              <select id="mapStartKey" class="select mono" onchange="runConversion()"><option value="start_time">start_time</option></select>
+            </div>
+            <div class="field">
+              <label for="mapEndKey">End time field</label>
+              <select id="mapEndKey" class="select mono" onchange="runConversion()"><option value="end_time">end_time</option></select>
+            </div>
+          </div>
+
+          <div id="modeCombinedBox" class="hidden">
+            <div class="fields fields-2">
+              <div class="field">
+                <label for="mapCombinedSourceKey">Source field</label>
+                <select id="mapCombinedSourceKey" class="select mono" onchange="runConversion()"><option value="__self__">[Item is String itself]</option></select>
+              </div>
+              <div class="field">
+                <label for="combinedDelimiterInput">Split pattern (auto = smart)</label>
+                <input id="combinedDelimiterInput" type="text" value="auto" class="input mono" oninput="runConversion()" spellcheck="false" title="auto finds the two timestamps; the rest is the word (safe for 1,000th or month-to-month). Or type your own split regex and set the part numbers below.">
+              </div>
+            </div>
+            <div class="fields fields-3">
+              <div class="field"><label for="combWordIdx">Word part #</label><input id="combWordIdx" type="number" min="0" value="0" class="input mono" oninput="runConversion()"></div>
+              <div class="field"><label for="combStartIdx">Start part #</label><input id="combStartIdx" type="number" min="0" value="1" class="input mono" oninput="runConversion()"></div>
+              <div class="field"><label for="combEndIdx">End part #</label><input id="combEndIdx" type="number" min="0" value="2" class="input mono" oninput="runConversion()"></div>
+            </div>
+          </div>
+
+          <div id="modeTuplesBox" class="fields fields-3 hidden">
+            <div class="field"><label for="tupleWordIdx">Word position</label><input id="tupleWordIdx" type="number" min="0" value="0" class="input mono" oninput="runConversion()"></div>
+            <div class="field"><label for="tupleStartIdx">Start position</label><input id="tupleStartIdx" type="number" min="0" value="1" class="input mono" oninput="runConversion()"></div>
+            <div class="field"><label for="tupleEndIdx">End position</label><input id="tupleEndIdx" type="number" min="0" value="2" class="input mono" oninput="runConversion()"></div>
+          </div>
+
+          <div class="drawer-foot">
+            <label for="timeFormatPolicy">Time units</label>
+            <select id="timeFormatPolicy" class="select" onchange="runConversion()">
+              <option value="auto" selected>Auto-detect (seconds or milliseconds)</option>
+              <option value="sec">Seconds or HH:MM:SS</option>
+              <option value="ms_to_sec">Milliseconds (297 → 0.297)</option>
+              <option value="raw">Keep the original text (00:00:00.297)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="editor-wrap">
+          <textarea id="transcriptInput" class="editor" spellcheck="false" aria-label="Transcript" placeholder="Transcript" oninput="onTranscriptRawInput()"></textarea>
+          <div id="transcriptEmpty" class="empty-state">
+            <div class="icon"><i class="fa-solid fa-wave-square"></i></div>
+            <b>Paste a word-level transcript</b>
+            <p>JSON from Whisper, Deepgram, AssemblyAI, ElevenLabs and others — field names are detected for you. SRT, VTT and <code>word|start|end</code> lines also work.</p>
+            <div class="actions">
+              <button class="btn btn-sm" onclick="openFilePicker('transcript')"><i class="fa-regular fa-folder-open"></i>Open file</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- 3. RESULT -->
+    <section id="paneResult" class="card" aria-labelledby="resultTitle">
+      <div class="card-head">
+        <div class="card-title">
+          <span id="resultStep" class="step">3</span>
+          <h2 id="resultTitle">Result</h2>
+        </div>
+        <div class="seg" role="tablist" aria-label="Result views">
+          <button id="tabOutputBtn" role="tab" class="active" aria-selected="true" onclick="switchOutputTab('text')">Output</button>
+          <button id="tabInspectorBtn" role="tab" aria-selected="false" onclick="switchOutputTab('inspector')">Beats</button>
+          <button id="tabIssuesBtn" role="tab" aria-selected="false" onclick="switchOutputTab('issues')">Issues <span id="issuesCountBadge" class="count">0</span></button>
+        </div>
+        <div class="card-actions">
+          <button id="copyBtn" class="btn btn-primary" onclick="copyOutput()"><i class="fa-regular fa-copy"></i><span>Copy</span></button>
+          <button id="downloadBtn" class="btn btn-icon" onclick="downloadOutput()" title="Download as .txt" aria-label="Download as .txt"><i class="fa-solid fa-download"></i></button>
         </div>
       </div>
 
-      <!-- Transcript Textarea -->
-      <div class="flex-1 flex flex-col relative overflow-hidden">
-        <textarea id="transcriptInput" spellcheck="false"
-          placeholder='Paste your word-by-word JSON or text here...'
-          oninput="onTranscriptRawInput()"
-          class="flex-1 w-full bg-slate-950/80 text-cyan-200/90 code-font text-xs p-3.5 focus:outline-none resize-none leading-relaxed"></textarea>
+      <div class="summary">
+        <div id="alignmentHealthBadge" class="health"><i class="fa-solid fa-circle-minus i-wait"></i><span>Waiting for script and transcript</span></div>
+        <div id="savingsBox" class="savings" title="Rough token estimate (4 characters ≈ 1 token)">
+          <span id="compressionRatioBadge" class="chip ok">0% smaller</span>
+          <span id="tokenCountCompare" class="faint mono" style="font-size:12px">0 → 0 tokens</span>
+        </div>
       </div>
+
+      <div id="outputTextContainer" class="view">
+        <div class="view-toolbar">
+          <div class="toolbar-group">
+            <label for="outputLayoutStyle">Layout</label>
+            <select id="outputLayoutStyle" class="select" onchange="runConversion(false)">
+              <option value="recommended" selected>Blocks — one word per line</option>
+              <option value="compact_line">Compact — one line per beat</option>
+            </select>
+          </div>
+          <div class="toolbar-group">
+            <label class="check" title="Leave out beats with no spoken words (useful for a partial transcript)"><input id="hideEmptyBeatsToggle" type="checkbox" checked onchange="runConversion(false)">Hide empty beats</label>
+            <label class="check" title="Keep speech before / after the script as «UNMATCHED_LEADING» / «UNMATCHED_TRAILING»"><input id="includeUnmatchedToggle" type="checkbox" checked onchange="runConversion(false)">Keep extra speech</label>
+          </div>
+        </div>
+        <div class="editor-wrap">
+          <textarea id="outputTextarea" class="editor output" readonly spellcheck="false" aria-label="Result" placeholder="Result"></textarea>
+          <div id="outputEmpty" class="empty-state">
+            <div class="icon"><i class="fa-solid fa-arrow-right-arrow-left"></i></div>
+            <b id="outputEmptyTitle">Your result appears here</b>
+            <p id="outputEmptyText">Add a script and a transcript. They are matched automatically as you type — no button to press.</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="outputInspectorContainer" class="view scroll hidden" role="tabpanel" aria-labelledby="tabInspectorBtn"></div>
+      <div id="outputIssuesContainer" class="view scroll hidden" role="tabpanel" aria-labelledby="tabIssuesBtn"></div>
     </section>
-
-    <!-- COLUMN 3: RECOMMENDED STRUCTURE OUTPUT & ALIGNMENT INSPECTOR (4 Cols) -->
-    <section class="lg:col-span-4 flex flex-col min-h-[75vh] lg:min-h-0 bg-slate-950 overflow-hidden">
-      <!-- Panel Bar -->
-      <div class="px-3.5 py-2 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between shrink-0">
-        <div class="flex items-center gap-2">
-          <span class="w-5 h-5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-xs font-bold">3</span>
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-200">Recommended Structure Output</span>
-        </div>
-
-        <!-- View Switcher: Raw Output vs Beat Inspector -->
-        <div class="flex items-center bg-slate-800 p-0.5 rounded-lg border border-slate-700 text-[11px]">
-          <button id="tabOutputBtn" onclick="switchOutputTab('text')" class="px-2.5 py-1 rounded-md bg-emerald-600 text-white font-medium transition">
-            Compressed Text
-          </button>
-          <button id="tabInspectorBtn" onclick="switchOutputTab('inspector')" class="px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition">
-            Alignment Check
-          </button>
-          <button id="tabIssuesBtn" onclick="switchOutputTab('issues')" class="px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition">
-            Issues <span id="issuesCountBadge" class="ml-0.5 px-1.5 rounded-full bg-slate-700 text-slate-200 text-[10px]">0</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Output Format Sub-bar -->
-      <div class="px-3.5 py-2 bg-slate-900/50 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[11px] shrink-0">
-        <div class="flex items-center gap-2">
-          <label class="text-slate-400">Style:</label>
-          <select id="outputLayoutStyle" onchange="runConversion(false)" class="bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-[11px] text-slate-200">
-            <option value="recommended" selected>Recommended Block (## Sec / ### «Key»)</option>
-            <option value="compact_line">Single-Line per Beat («1» | word|s|e ...)</option>
-          </select>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <label class="flex items-center gap-1.5 text-slate-400 cursor-pointer" title="Hide beats that have no matching words (e.g. when pasting a partial transcript)">
-            <input id="hideEmptyBeatsToggle" type="checkbox" checked onchange="runConversion(false)" class="rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0">
-            <span>Hide empty beats</span>
-          </label>
-          <label class="flex items-center gap-1.5 text-slate-400 cursor-pointer" title="Keep spoken words that are not part of the script (e.g. intro/outro chatter) under «UNMATCHED_LEADING» / «UNMATCHED_TRAILING»">
-            <input id="includeUnmatchedToggle" type="checkbox" checked onchange="runConversion(false)" class="rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0">
-            <span>Unmatched words</span>
-          </label>
-        </div>
-      </div>
-
-      <!-- Output Text View -->
-      <div id="outputTextContainer" class="flex-1 flex flex-col relative overflow-hidden">
-        <textarea id="outputTextarea" readonly spellcheck="false"
-          placeholder="Recommended structure output will appear here automatically..."
-          class="flex-1 w-full bg-slate-950 text-emerald-300 code-font text-xs p-4 focus:outline-none resize-none leading-relaxed selection:bg-emerald-800 selection:text-white"></textarea>
-      </div>
-
-      <!-- Alignment Inspector View (Hidden by default) -->
-      <div id="outputInspectorContainer" class="hidden flex-1 overflow-y-auto p-3 space-y-2.5 bg-slate-950">
-        <!-- Populated dynamically with beat-by-beat alignment diagnostics -->
-      </div>
-
-      <!-- Issues / Diagnostics View (Hidden by default) -->
-      <div id="outputIssuesContainer" class="hidden flex-1 overflow-y-auto p-3 space-y-2 bg-slate-950"></div>
-
-      <!-- Bottom Compression & Alignment Telemetry Bar -->
-      <div class="px-3.5 py-2.5 bg-slate-900 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[11px] shrink-0">
-        <div class="flex items-center gap-3">
-          <span id="compressionRatioBadge" class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold">
-            0% Context Saved
-          </span>
-          <span id="tokenCountCompare" class="text-slate-400 font-mono text-[10px]">
-            0 ➔ 0 est. tokens
-          </span>
-        </div>
-        <div id="alignmentHealthBadge" onclick="switchOutputTab('issues')" title="Click to see what does not match" class="text-[11px] text-slate-300 flex items-center gap-1.5 cursor-pointer hover:text-white">
-          <i class="fa-solid fa-check-double text-emerald-400"></i>
-          <span>Aligned</span>
-        </div>
-      </div>
-    </section>
-
   </main>
 
-  <!-- APPLICATION SCRIPTS (order matters: later files use functions from earlier ones) -->
+  <div id="toast" class="toast" role="status" aria-live="polite">
+    <i id="toastIcon" class="fa-solid fa-circle-check t-ok"></i>
+    <span id="toastMsg"></span>
+    <button id="toastAction" class="toast-action hidden"></button>
+  </div>
+
+  <!-- order matters: later files use functions from earlier ones -->
   <script src="js/sample-data.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/transcript-parser.js"></script>

@@ -67,7 +67,7 @@ function loadScenario(scenarioKey) {
     msg = 'Loaded Array of Tuples Scenario';
   } else if (scenarioKey === 'messy_take') {
     transcript = JSON.stringify({ words: buildMessyTake() }, null, 2);
-    msg = 'Loaded messy recording — open the Issues tab';
+    msg = 'Loaded messy recording — see the Issues tab';
   } else if (scenarioKey === 'assemblyai_ms') {
     const words = sampleWordsInSeconds();
     transcript = JSON.stringify({

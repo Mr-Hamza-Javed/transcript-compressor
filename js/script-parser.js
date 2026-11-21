@@ -200,7 +200,7 @@ function parseScriptStructure() {
     notes.push({
       level: 'warn',
       title: `${emptyBeats.length} beat(s) have no script text, so they cannot be matched: ${emptyBeats.slice(0, 8).map(b => b.key).join(', ')}${emptyBeats.length > 8 ? ' …' : ''}`,
-      detail: `First one is on script line ${emptyBeats[0].lineNo}. If the text is in another column, set "Script Text Col #" in Map Script.`
+      detail: `First one is on script line ${emptyBeats[0].lineNo}. If the text is in another column, set "Script text column" in Script settings.`
     });
   }
   const seen = new Map();
@@ -220,7 +220,7 @@ function parseScriptStructure() {
     notes.push({
       level: 'error',
       title: 'No beats found in the script',
-      detail: 'Expected markdown table rows like "| «1» | Script line |", inline lines like "«1» Script line", or headings like "### «1»". Use "Map Script" to choose the key and text columns.'
+      detail: 'Expected markdown table rows like "| «1» | Script line |", inline lines like "«1» Script line", or headings like "### «1»". Use Script settings to choose the key and text columns.'
     });
   }
   return { sections: finalSections, notes };

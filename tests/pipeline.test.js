@@ -340,3 +340,93 @@ test('large input aligns in reasonable time', () => {
   assert.ok(ms < 15000, `took ${ms} ms`);
   assert.equal(app.beats().filter(b => b.stats.status === 'ok').length, 150);
 });
+
+/* ---------- UI behaviour ---------- */
+test('UI: input cards show what was detected; empty states follow the inputs', () => {
+  const app = fresh().setScript('').setTranscript('').convert();
+  assert.equal(app.el('scriptStatsBadge').textContent, 'Paste your script');
+  assert.equal(app.el('scriptEmpty').classList.contains('hidden'), false);
+  assert.equal(app.el('outputEmpty').classList.contains('hidden'), false);
+  assert.equal(app.el('copyBtn').disabled, true);
+
+  app.setScript(SCRIPT_3).convert();
+  assert.equal(app.el('scriptStatsBadge').textContent, '3 beats in 1 section');
+  assert.equal(app.el('scriptEmpty').classList.contains('hidden'), true);
+  assert.match(app.el('outputEmptyText').textContent, /transcript/);
+
+  app.setTranscript({ words: wordsFromText(SPOKEN_3) }).convert();
+  assert.equal(app.el('transcriptStatsBadge').textContent, '19 words');
+  assert.match(app.el('detectedFormatPill').textContent, /word, start, end/);
+  assert.equal(app.el('outputEmpty').classList.contains('hidden'), true);
+  assert.equal(app.el('copyBtn').disabled, false);
+  assert.match(app.el('alignmentHealthBadge').innerHTML, /3\/3/);
+});
+
+test('UI: a script with no beats says so on the script card', () => {
+  const app = fresh().setScript('Just prose, no beats.').convert();
+  assert.match(app.el('scriptStatsBadge').textContent, /No beats found/);
+  assert.match(app.el('scriptStatsBadge').className, /err/);
+});
+
+test('UI: clearing one input can be undone from the toast', () => {
+  const app = fresh().setScript(SCRIPT_3).setTranscript({ words: wordsFromText(SPOKEN_3) }).convert();
+  app.call('clearOne', 'transcript');
+  assert.equal(app.el('transcriptInput').value, '');
+  assert.equal(app.el('scriptInput').value, SCRIPT_3, 'the other input is untouched');
+  const t = app.toasts.at(-1);
+  assert.equal(t.action.label, 'Undo');
+  t.action.onClick();
+  assert.match(app.el('transcriptInput').value, /cookies/);
+  assert.equal(app.beat('«2»').stats.status, 'ok');
+});
+
+test('UI: manual nudges can be undone, and "Re-match" drops them', () => {
+  const app = fresh().setScript(SCRIPT_3).setTranscript({ words: wordsFromText(SPOKEN_3) }).convert();
+  app.call('nudgeBeatBoundary', 1, 'first_to_prev');
+  app.call('nudgeBeatBoundary', 1, 'first_to_prev');
+  assert.equal(app.beat('«2»').matchedWords[0].word, 'small');
+  app.call('undoNudge');
+  assert.equal(app.beat('«2»').matchedWords[0].word, 'a');
+  app.toasts.at(-2).action.onClick(); // the first nudge's Undo
+  assert.equal(app.beat('«2»').matchedWords[0].word, 'Then');
+  app.call('nudgeBeatBoundary', 1, 'first_to_prev');
+  app.convert(); // Re-match
+  assert.equal(app.beat('«2»').matchedWords[0].word, 'Then');
+  assert.equal(app.get('nudgeHistory').length, 0);
+});
+
+test('UI: moved "spoken before the script" words become extra words, and undo restores them', () => {
+  const app = fresh().setScript(SCRIPT_3)
+    .setTranscript({ words: wordsFromText('Hey guys welcome back to the channel. ' + SPOKEN_3) }).convert();
+  const n = app.alignment().leading.length;
+  app.call('moveUnmatched', 'leading');
+  assert.equal(app.beat('«1»').matchedWords[0].status, 'ins');
+  app.call('undoNudge');
+  assert.equal(app.alignment().leading.length, n);
+  assert.equal(app.alignment().leading[0].status, 'unmatched');
+});
+
+test('UI: "Needs review" filter shows only problem beats; clicking an issue for a hidden beat shows all', () => {
+  const app = fresh().setScript(SCRIPT_3)
+    .setTranscript({ words: wordsFromText('There was a time when cookies ruled the mall. Nobody saw it coming.') }).convert();
+  app.call('setInspectorFilter', 'review');
+  const html = app.el('outputInspectorContainer').innerHTML;
+  assert.match(html, /beat-card-1/);
+  assert.doesNotMatch(html, /beat-card-0/);
+  app.call('focusBeat', 0);
+  assert.equal(app.get('inspectorFilter'), 'all');
+  assert.equal(app.el('tabInspectorBtn').getAttribute('aria-selected'), 'true');
+  assert.equal(app.el('outputInspectorContainer').classList.contains('hidden'), false);
+  app.call('setInspectorFilter', 'all');
+});
+
+test('UI: tabs switch views and the issues badge counts warnings + errors', () => {
+  const app = fresh();
+  app.call('loadScenario', 'messy_take');
+  app.call('switchOutputTab', 'issues');
+  assert.equal(app.el('outputIssuesContainer').classList.contains('hidden'), false);
+  assert.equal(app.el('outputTextContainer').classList.contains('hidden'), true);
+  assert.equal(app.el('tabIssuesBtn').classList.contains('active'), true);
+  const warnErr = app.issues().filter(i => i.level !== 'info').length;
+  assert.equal(String(app.el('issuesCountBadge').textContent), String(warnErr));
+});
