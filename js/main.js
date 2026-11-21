@@ -23,6 +23,45 @@ async function copyOutput() {
   }
 }
 
+/* ---------- Download file name ---------- */
+const DOWNLOAD_BASE_NAME = 'Word level Transcription';
+
+// Finds a "project" value in the transcript JSON: at the top first, then in nested objects
+// (not inside the word lists). e.g. { "project": "Sause Downfall", "words": [...] }
+function findProjectName(json) {
+  if (!json || typeof json !== 'object') return '';
+  const queue = [{ node: json, depth: 0 }];
+  while (queue.length) {
+    const { node, depth } = queue.shift();
+    if (Array.isArray(node)) {
+      // JSON Lines: a header object in the first line may carry the project
+      if (depth === 0 && node[0] && typeof node[0] === 'object' && !Array.isArray(node[0])) queue.push({ node: node[0], depth: 1 });
+      continue;
+    }
+    for (const k of Object.keys(node)) {
+      const v = node[k];
+      if (/^project(_?name)?$/i.test(k) && (typeof v === 'string' || typeof v === 'number') && String(v).trim()) return String(v).trim();
+    }
+    if (depth < 3) {
+      for (const k of Object.keys(node)) {
+        const v = node[k];
+        if (v && typeof v === 'object' && !Array.isArray(v)) queue.push({ node: v, depth: depth + 1 });
+      }
+    }
+  }
+  return '';
+}
+
+function safeFileName(name) {
+  return String(name).replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/^\.+|\.+$/g, '').slice(0, 120);
+}
+
+// "Word level Transcription.txt", or "Word level Transcription - Sause Downfall.txt" when the JSON has a project
+function downloadFileName() {
+  const project = safeFileName(findProjectName(state.parsedJSON));
+  return `${project ? `${DOWNLOAD_BASE_NAME} - ${project}` : DOWNLOAD_BASE_NAME}.txt`;
+}
+
 function downloadOutput() {
   const text = $('outputTextarea').value;
   if (!text) {
@@ -33,12 +72,13 @@ function downloadOutput() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'compressed_script_transcript.txt';
+  const fileName = downloadFileName();
+  a.download = fileName;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Downloaded compressed_script_transcript.txt');
+  showToast(`Downloaded "${fileName}"`);
 }
 
 // Start: restore the user's last inputs, otherwise load the Crumbl sample

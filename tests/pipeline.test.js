@@ -390,9 +390,41 @@ test('UI: manual nudges can be undone, and "Re-match" drops them', () => {
   app.toasts.at(-2).action.onClick(); // the first nudge's Undo
   assert.equal(app.beat('«2»').matchedWords[0].word, 'Then');
   app.call('nudgeBeatBoundary', 1, 'first_to_prev');
-  app.convert(); // Re-match
+  app.call('rematchFromScratch');
   assert.equal(app.beat('«2»').matchedWords[0].word, 'Then');
   assert.equal(app.get('nudgeHistory').length, 0);
+  assert.equal(app.get('manualOverrides').size, 0);
+});
+
+test('UI: manual nudges survive editing the script or transcript', async () => {
+  const app = fresh().setScript(SCRIPT_3).setTranscript({ words: wordsFromText(SPOKEN_3) }).convert();
+  app.call('nudgeBeatBoundary', 1, 'first_to_prev');
+  app.call('nudgeBeatBoundary', 1, 'first_to_prev');
+  app.call('nudgeBeatBoundary', 2, 'pull_from_prev'); // «3» takes "everything."
+  // Edit the script text (re-match runs) — the moves are re-applied
+  app.el('scriptInput').value = SCRIPT_3.replace('Nobody saw it coming.', 'Nobody saw it coming at all.');
+  app.call('onInputChanged');
+  await app.settle();
+  assert.equal(app.beat('«1»').matchedWords.slice(-2).map(w => w.word).join(' '), 'Then a');
+  assert.equal(app.beat('«3»').matchedWords[0].word, 'everything.');
+  // Undo after an edit still works (re-matches with the older moves)
+  app.call('undoNudge');
+  assert.equal(app.beat('«3»').matchedWords[0].word, 'Nobody');
+  assert.equal(app.beat('«1»').matchedWords.at(-1).word, 'a');
+  // A different transcript drops moves that no longer fit
+  app.setTranscript({ words: wordsFromText('Completely new words here.') }).convert();
+  assert.equal(app.get('manualOverrides').size, 0);
+});
+
+test('UI: moves that would break word order are not re-applied', () => {
+  const app = fresh().setScript(SCRIPT_3).setTranscript({ words: wordsFromText(SPOKEN_3) }).convert();
+  // Pretend an old move says a word in the middle of «2» belongs to «1»
+  const w = app.beat('«2»').matchedWords[3];
+  app.get('manualOverrides').set(`${w.idx}|${w.word}|${w.start}`, '«1»#1');
+  app.convert();
+  assert.ok(app.beat('«2»').matchedWords.includes(app.alignment().words[w.idx]));
+  const all = app.beats().flatMap(b => b.matchedWords.map(x => x.idx));
+  eq(all, [...all].sort((a, b) => a - b), 'word order intact');
 });
 
 test('UI: moved "spoken before the script" words become extra words, and undo restores them', () => {
@@ -429,4 +461,117 @@ test('UI: tabs switch views and the issues badge counts warnings + errors', () =
   assert.equal(app.el('tabIssuesBtn').classList.contains('active'), true);
   const warnErr = app.issues().filter(i => i.level !== 'info').length;
   assert.equal(String(app.el('issuesCountBadge').textContent), String(warnErr));
+});
+
+/* ---------- download file name ---------- */
+test('download name is "Word level Transcription", with the JSON "project" appended when present', () => {
+  const app = fresh().setScript(SCRIPT_3);
+  app.setTranscript({ words: wordsFromText(SPOKEN_3) }).convert();
+  assert.equal(app.call('downloadFileName'), 'Word level Transcription.txt');
+
+  app.setTranscript({ project: 'Sause Downfall', words: wordsFromText(SPOKEN_3) }).convert();
+  assert.equal(app.call('downloadFileName'), 'Word level Transcription - Sause Downfall.txt');
+
+  app.setTranscript({ metadata: { project: 'Nested One' }, words: wordsFromText(SPOKEN_3) }).convert();
+  assert.equal(app.call('downloadFileName'), 'Word level Transcription - Nested One.txt');
+
+  app.setTranscript({ project: 'Bad/Name: "x"?', words: wordsFromText(SPOKEN_3) }).convert();
+  assert.equal(app.call('downloadFileName'), 'Word level Transcription - Bad Name x.txt');
+
+  app.setTranscript({ project: '   ', words: wordsFromText(SPOKEN_3) }).convert();
+  assert.equal(app.call('downloadFileName'), 'Word level Transcription.txt');
+
+  app.setTranscript('There|0|0.3\nwas|0.3|0.6').convert(); // not JSON
+  assert.equal(app.call('downloadFileName'), 'Word level Transcription.txt');
+
+  // Words that carry a "project" field do not count — only the transcript's own value
+  app.setTranscript({ words: wordsFromText(SPOKEN_3).map(w => ({ ...w, project: 'word-level' })) }).convert();
+  assert.equal(app.call('downloadFileName'), 'Word level Transcription.txt');
+});
+
+test('downloading uses that name', () => {
+  const app = fresh().setScript(SCRIPT_3).setTranscript({ project: 'Sause Downfall', words: wordsFromText(SPOKEN_3) }).convert();
+  let made = null;
+  app.ctx.document.createElement = () => (made = { click() {} });
+  app.call('downloadOutput');
+  assert.equal(made.download, 'Word level Transcription - Sause Downfall.txt');
+  assert.match(app.toasts.at(-1).msg, /Sause Downfall/);
+});
+
+/* ---------- formats fixed in this round ---------- */
+test('Azure style Offset + Duration (100-ns ticks): end = start + duration', () => {
+  const app = fresh().setScript(scriptTable('S', [['1', 'Hello there world.']]))
+    .setTranscript({ NBest: [{ Words: [
+      { Word: 'Hello', Offset: 1000000, Duration: 2000000 },
+      { Word: 'there', Offset: 3000000, Duration: 2000000 },
+      { Word: 'world.', Offset: 5000000, Duration: 2000000 }] }] })
+    .convert();
+  assert.equal(app.el('endIsDuration').checked, true);
+  assert.match(app.output(), /^Hello\|0\.100\|0\.300$/m);
+  assert.match(app.output(), /^world\.\|0\.500\|0\.700$/m);
+});
+
+test('no end-time field: "(none)" is chosen and words end at the next word', () => {
+  const app = fresh().setScript(SCRIPT_3)
+    .setTranscript({ words: wordsFromText(SPOKEN_3).map(w => ({ token: w.word, at: w.start })) }).convert();
+  assert.equal(app.el('mapEndKey').value, '');
+  assert.match(app.output(), /^There\|0\.000\|0\.300$/m);
+  assert.ok(hasIssue(app, /No end times/, 'info'));
+  assert.ok(!hasIssue(app, /had no timestamp/));
+  assert.equal(app.issues().filter(i => i.level === 'error').length, 0);
+});
+
+test('negative times are set to 0 with a warning', () => {
+  const words = wordsFromText(SPOKEN_3);
+  words[0].start = -0.5;
+  const app = fresh().setScript(SCRIPT_3).setTranscript({ words }).convert();
+  assert.match(app.output(), /^There\|0\.000\|/m);
+  assert.ok(hasIssue(app, /negative time/, 'warn'));
+});
+
+test('"estimated": true on a transcript word is shown with ~ but the time is kept', () => {
+  const words = wordsFromText(SPOKEN_3);
+  words[2].estimated = true;
+  const app = fresh().setScript(SCRIPT_3).setTranscript({ words }).convert();
+  const w = app.alignment().words[2];
+  assert.equal(w.flagged, true);
+  assert.equal(w.start, '0.600');
+  app.call('switchOutputTab', 'inspector');
+  assert.match(app.el('outputInspectorContainer').innerHTML, /~0\.600/);
+});
+
+test('"it\'s" vs "its" and compound written both ways in one transcript', () => {
+  let app = fresh().setScript(scriptTable('S', [['1', "Its sauce was hot."]]))
+    .setTranscript({ words: wordsFromText("It's sauce was hot.") }).convert();
+  assert.equal(app.beat('«1»').stats.coverage, 1);
+  app = fresh().setScript(scriptTable('S', [['1', 'A month-to-month lease.'], ['2', 'Then month-to-month again.']]))
+    .setTranscript({ words: wordsFromText('A month-to-month lease. Then month to month again.') }).convert();
+  assert.equal(app.beat('«1»').stats.coverage, 1);
+  assert.equal(app.beat('«2»').stats.coverage, 1);
+});
+
+test('a "Time units" choice that does not fit the numbers is warned about', () => {
+  let app = fresh().setScript(SCRIPT_3).setTranscript({ words: wordsFromText(SPOKEN_3) });
+  app.el('timeFormatPolicy').value = 'ms_to_sec';
+  app.convert();
+  assert.ok(hasIssue(app, /seem to be seconds already/, 'warn'));
+  app = fresh().setScript(SCRIPT_3).setTranscript({ words: wordsFromText(SPOKEN_3).map(w => ({ ...w, start: w.start * 1000, end: w.end * 1000 })) });
+  app.el('timeFormatPolicy').value = 'sec';
+  app.convert();
+  assert.ok(hasIssue(app, /seem to be milliseconds/, 'warn'));
+});
+
+test('a whole earlier take before the script is called out as another take', () => {
+  const app = fresh().setScript(SCRIPT_3).setTranscript({ words: wordsFromText(SPOKEN_3 + ' ' + SPOKEN_3) }).convert();
+  const issue = app.issues().find(i => /before the script starts/.test(i.title));
+  assert.match(issue.detail, /repeats script beats «1»–«3»/);
+});
+
+test('inputs too big for storage show a warning once', () => {
+  const app = fresh();
+  app.localStorage.quota = 10;
+  app.el('scriptInput').value = 'a long script text';
+  app.call('saveInputs');
+  app.call('saveInputs');
+  assert.equal(app.toasts.filter(t => /too big for the browser/.test(t.msg)).length, 1);
 });

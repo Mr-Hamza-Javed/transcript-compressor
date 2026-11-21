@@ -10,8 +10,11 @@
   - Whisper (`segments[].words[]`), Deepgram (`results.channels[0].alternatives[0].words`), AssemblyAI (milliseconds), AWS Transcribe, ElevenLabs, Rev.ai
   - Combined strings (`"There | 0.000 - 0.297"`), array of tuples, plain `word|start|end` lines, JSON Lines
   - SRT / VTT subtitles (word times cue ke andar estimate kiye jaate hain)
+  - Azure (`Offset` + `Duration`, 100-ns ticks): end = start + duration. End-time field na ho to har word agle word ke start par khatam hota hai
+  - Transcript ka apna `"estimated": true` flag Beats tab mein `~` ke saath dikhta hai
 - **Script formats:** markdown tables (columns kisi bhi order mein, header se pehchanta hai), inline `«1» text`, ya `### «1»` headings.
-- **Manual fine-tuning:** **Beats** tab mein beat ke kinaare par `←` / `+` buttons se words agli/pichli beat mein bhejein. Har badlaav **Undo** ho sakta hai. **Needs review** filter sirf masle wali beats dikhata hai.
+- **Manual fine-tuning:** **Beats** tab mein beat ke kinaare par `←` / `+` buttons se words agli/pichli beat mein bhejein. Har badlaav **Undo** ho sakta hai, aur script/transcript edit karne par bhi bacha rehta hai (**Re-match** se hat jaata hai). **Needs review** filter sirf masle wali beats dikhata hai.
+- **Download ka naam:** `Word level Transcription.txt`. Agar transcript JSON mein `"project": "Sause Downfall"` ho (upar ya kisi nested object mein) to naam `Word level Transcription - Sause Downfall.txt` ban jaata hai.
 - **Light / dark theme**, saaf empty states, aur har input ka apna Clear button (Undo ke saath).
 - **75–85% context/token saving.**
 
@@ -32,6 +35,10 @@ App batati hai ke script aur transcript kahan match nahi karte:
 | Milliseconds timestamps | khud seconds mein convert |
 | Peeche jaate timestamps | ⚠ warning |
 | Khaali beat text / duplicate keys | ⚠ warning |
+| Negative timestamps | 0 kar diye jaate hain, ⚠ warning |
+| Ghalat "Time units" chuni (seconds ko ms bataya) | ⚠ warning |
+| Poori script do dafa padhi (pehli take) | ⚠ "repeats script beats «1»–«3» — probably another take" |
+| Inputs browser storage ke liye bohat bare | ⚠ ek dafa batata hai ke reload par wapas nahi aayenge |
 
 ## File structure
 ```

@@ -87,6 +87,22 @@ function tokenSimilarityScore(normS, normT) {
     }
   }
 
+  // Short words that differ only by a final "s": "it's"/"its" -> "it"/"its", "that"/"thats"
+  if (ls >= 2 && lt >= 2 && Math.abs(ls - lt) === 1) {
+    const shorter = ls < lt ? normS : normT;
+    const longer = ls < lt ? normT : normS;
+    if (longer === shorter + 's') return 2.6;
+  }
+
+  // One side is a hyphenated compound that contains the other ("month-to-month" vs "month"),
+  // e.g. a transcript that writes the compound joined in one place and split in another
+  const isCompound = (x) => x.includes('-') || x.includes('/');
+  if (isCompound(normS) !== isCompound(normT)) {
+    const compound = isCompound(normS) ? normS : normT;
+    const part = isCompound(normS) ? normT : normS;
+    if ((part.length >= 3 || /^\d+$/.test(part)) && !COMMON_STOPWORDS.has(part) && compound.split(/[-\/]+/).includes(part)) return 2.0;
+  }
+
   // Partial number match ("2017" vs "20"/"17" from "twenty seventeen")
   if (/^\d+$/.test(normS) && /^\d+$/.test(normT) && Math.min(ls, lt) >= 2) {
     if (normS.includes(normT) || normT.includes(normS)) return 2.5;

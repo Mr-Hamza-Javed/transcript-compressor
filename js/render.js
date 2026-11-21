@@ -1,8 +1,94 @@
 /* =========================================================================
    MANUAL FINE-TUNING (with undo)
    ========================================================================= */
-// Snapshots of beat contents taken before each manual change; cleared when the alignment is recomputed
+// Manual moves are remembered per word ("this word belongs to beat «7»") and re-applied after every
+// automatic re-match, so editing the script or transcript does not throw them away.
+// Keys: word = "index|text|start", place = "L" (before the script), "T" (after it) or "«key»#n" (n-th beat with that key).
+const manualOverrides = new Map();
+// Snapshots taken before each manual change (for Undo)
 let nudgeHistory = [];
+
+const wordId = (w) => `${w.idx}|${w.word}|${w.start}`;
+
+function beatPlaceIds(beats) {
+  const seen = new Map();
+  return beats.map(b => {
+    const n = (seen.get(b.key) || 0) + 1;
+    seen.set(b.key, n);
+    return `${b.key}#${n}`;
+  });
+}
+
+function placeIdOf(al, beat) {
+  return beatPlaceIds(al.allBeats)[al.allBeats.indexOf(beat)];
+}
+
+function rememberMove(words, placeId) {
+  words.forEach(w => manualOverrides.set(wordId(w), placeId));
+}
+
+function clearManualOverrides() {
+  manualOverrides.clear();
+  nudgeHistory = [];
+}
+
+// Re-applies remembered moves. A move only happens where it keeps the word order intact
+// (a word can only change places with its neighbour across a beat border).
+function applyManualOverrides(al) {
+  if (!manualOverrides.size || !al.allBeats.length) return 0;
+  const beats = al.allBeats, n = beats.length, words = al.words, N = words.length;
+  const ids = beatPlaceIds(beats);
+  const indexOfPlace = new Map(ids.map((id, i) => [id, i]));
+  indexOfPlace.set('L', -1);
+  indexOfPlace.set('T', n);
+
+  const loc = new Int32Array(N);
+  const where = new Map();
+  al.leading.forEach(w => where.set(w, -1));
+  al.trailing.forEach(w => where.set(w, n));
+  beats.forEach((b, i) => b.matchedWords.forEach(w => where.set(w, i)));
+  words.forEach((w, i) => { loc[i] = where.has(w) ? where.get(w) : -1; });
+
+  const target = new Map(); // word index -> place index
+  const valid = new Map();
+  words.forEach((w, i) => {
+    const id = wordId(w);
+    if (!manualOverrides.has(id)) return;
+    const t = indexOfPlace.get(manualOverrides.get(id));
+    if (t === undefined) return;
+    target.set(i, t);
+    valid.set(id, manualOverrides.get(id));
+  });
+  // Forget moves that no longer fit (word or beat gone)
+  manualOverrides.clear();
+  valid.forEach((v, k) => manualOverrides.set(k, v));
+
+  let applied = 0;
+  for (let pass = 0, changed = true; changed && pass < target.size + 2; pass++) {
+    changed = false;
+    target.forEach((t, i) => {
+      if (loc[i] === t) return;
+      const lo = i > 0 ? loc[i - 1] : -1;
+      const hi = i < N - 1 ? loc[i + 1] : n;
+      if (lo <= t && t <= hi) { loc[i] = t; changed = true; applied++; }
+    });
+  }
+  if (!applied) return 0;
+
+  al.leading = [];
+  al.trailing = [];
+  beats.forEach(b => { b.matchedWords = []; });
+  words.forEach((w, i) => {
+    const l = loc[i];
+    if (l < 0) { al.leading.push(w); w.status = 'unmatched'; }
+    else if (l >= n) { al.trailing.push(w); w.status = 'unmatched'; }
+    else {
+      beats[l].matchedWords.push(w);
+      if (w.status === 'unmatched') w.status = 'ins';
+    }
+  });
+  return applied;
+}
 
 function snapshotAlignment() {
   const al = state.alignment;
@@ -11,21 +97,35 @@ function snapshotAlignment() {
     beats: al.allBeats.map(b => b.matchedWords.slice()),
     leading: al.leading.slice(),
     trailing: al.trailing.slice(),
-    statuses: al.words.map(w => w.status)
+    statuses: al.words.map(w => w.status),
+    overrides: new Map(manualOverrides)
   });
   if (nudgeHistory.length > 200) nudgeHistory.shift();
 }
 
 function undoNudge() {
   const snap = nudgeHistory.pop();
-  if (!snap || snap.alignment !== state.alignment) { nudgeHistory = []; return; }
-  const al = state.alignment;
-  al.allBeats.forEach((b, i) => { b.matchedWords = snap.beats[i]; });
-  al.leading = snap.leading;
-  al.trailing = snap.trailing;
-  al.words.forEach((w, i) => { w.status = snap.statuses[i]; });
-  renderOutputFromCurrentState();
+  if (!snap) return;
+  manualOverrides.clear();
+  snap.overrides.forEach((v, k) => manualOverrides.set(k, v));
+  if (snap.alignment === state.alignment) {
+    const al = state.alignment;
+    al.allBeats.forEach((b, i) => { b.matchedWords = snap.beats[i]; });
+    al.leading = snap.leading;
+    al.trailing = snap.trailing;
+    al.words.forEach((w, i) => { w.status = snap.statuses[i]; });
+    renderOutputFromCurrentState();
+  } else {
+    runConversion(true); // inputs changed since: re-match and re-apply the older set of moves
+  }
   showToast('Undone');
+}
+
+// "Re-match" button: forget manual moves and match from scratch
+function rematchFromScratch() {
+  clearManualOverrides();
+  runConversion(true);
+  showToast('Matched again — manual changes removed');
 }
 
 const undoAction = () => ({ label: 'Undo', onClick: undoNudge });
@@ -51,6 +151,7 @@ function nudgeBeatBoundary(beatIndex, direction) {
   snapshotAlignment();
   const word = from.matchedWords[take]();
   to.matchedWords[put](word);
+  rememberMove([word], placeIdOf(al, to));
   renderOutputFromCurrentState();
   showToast(`Moved "${word.word}" from ${from.key} to ${to.key}`, 'success', undoAction());
 }
@@ -74,6 +175,7 @@ function moveUnmatched(which) {
   }
   // Inside a beat they are extra speech, not "outside the script" any more
   list.forEach(w => { w.status = 'ins'; });
+  rememberMove(list, placeIdOf(al, target));
   renderOutputFromCurrentState();
   showToast(`Moved ${list.length} word(s) into ${target.key}`, 'success', undoAction());
 }
@@ -97,7 +199,6 @@ function focusBeat(beatIndex) {
    ========================================================================= */
 function runConversion(recomputeAlignment = true) {
   if (recomputeAlignment || !state.alignment) {
-    nudgeHistory = [];
     const tx = extractTranscriptWords();
     state.transcriptNotes = tx.notes;
     const sc = parseScriptStructure();
@@ -110,6 +211,7 @@ function runConversion(recomputeAlignment = true) {
       state.alignment = { allBeats: [], words: tx.words, scriptTokens: [], leading: tx.words.slice(), trailing: [], extraRuns: [], tokWord: new Int32Array(0),
         notes: [{ level: 'error', title: 'Alignment failed unexpectedly', detail: String(err && err.message || err) }] };
     }
+    applyManualOverrides(state.alignment);
   }
   renderOutputFromCurrentState();
 }
@@ -356,14 +458,23 @@ function buildIssues(al, includeUnmatched) {
       `"${wordsText(runWords)}" — kept inside ${owner ? owner.key : 'the nearest beat'}.${hint}`, owner ? owner.beatIndex : null);
   });
 
-  const where = includeUnmatched ? 'kept in the output' : 'left out of the output ("Unmatched words" is off)';
+  const where = includeUnmatched ? 'kept in the output' : 'left out of the output ("Keep extra speech" is off)';
+  // Is speech outside the script really an earlier / later take of script beats?
+  const takeHint = (list) => {
+    const set = contentSet(list.map(w => w.norm));
+    if (set.size < 4) return '';
+    const hits = beats.filter(b => b.content && b.content.size && overlapRatio(b.content, set) >= 0.6);
+    if (!hits.length) return '';
+    const range = hits.length === 1 ? hits[0].key : `${hits[0].key}–${hits[hits.length - 1].key}`;
+    return ` It repeats script beats ${range} — probably another take. Keep it out of the output if you only want the final take.`;
+  };
   if (al.leading.length) {
     add('warn', `${al.leading.length} spoken word(s) before the script starts (${fmtClock(al.leading[0].s)}–${fmtClock(al.leading[al.leading.length - 1].e)})`,
-      `"${wordsText(al.leading)}" — ${where} as «UNMATCHED_LEADING». Use the Beats tab to move them into the first beat if they belong there.`);
+      `"${wordsText(al.leading)}" — ${where} as «UNMATCHED_LEADING».${takeHint(al.leading) || ' Use the Beats tab to move them into the first beat if they belong there.'}`);
   }
   if (al.trailing.length) {
     add('warn', `${al.trailing.length} spoken word(s) after the script ends (${fmtClock(al.trailing[0].s)}–${fmtClock(al.trailing[al.trailing.length - 1].e)})`,
-      `"${wordsText(al.trailing)}" — ${where} as «UNMATCHED_TRAILING».`);
+      `"${wordsText(al.trailing)}" — ${where} as «UNMATCHED_TRAILING».${takeHint(al.trailing)}`);
   }
   return sortIssues(issues);
 }
@@ -471,8 +582,9 @@ function wordChip(w) {
   if (w.status === 'sub') { cls = 'sub'; title += ` · heard "${w.word}" where the script says "${w.expected}"`; }
   else if (w.status === 'ins') { cls = w.isFiller ? 'filler' : 'ins'; title += w.isFiller ? ' · filler word' : ' · extra word (not in the script)'; }
   else if (w.status === 'unmatched') { cls = 'unmatched'; title += ' · outside the script'; }
-  if (w.estimated) { cls += ' est'; title += ' · time estimated'; }
-  return `<span class="w ${cls}" title="${escapeHtml(title)}">${escapeHtml(w.word)}<span class="t">${w.estimated ? '~' : ''}${escapeHtml(w.start)}</span></span>`;
+  const est = w.estimated || w.flagged;
+  if (est) { cls += ' est'; title += w.flagged && !w.estimated ? ' · time marked as estimated in the transcript' : ' · time estimated'; }
+  return `<span class="w ${cls}" title="${escapeHtml(title)}">${escapeHtml(w.word)}<span class="t">${est ? '~' : ''}${escapeHtml(w.start)}</span></span>`;
 }
 
 function unmatchedCard(kind, list) {
@@ -552,7 +664,7 @@ function renderAlignmentInspector(sections, al) {
       </div>
       <div class="toolbar-group">
         <button class="btn btn-sm btn-ghost" onclick="undoNudge()" ${nudgeHistory.length ? '' : 'disabled'} title="Undo the last manual change"><i class="fa-solid fa-rotate-left"></i>Undo</button>
-        <button class="btn btn-sm btn-ghost" onclick="runConversion(true)" title="Throw away manual changes and match again"><i class="fa-solid fa-arrows-rotate"></i>Re-match</button>
+        <button class="btn btn-sm btn-ghost" onclick="rematchFromScratch()" title="Remove manual changes and match again from scratch"><i class="fa-solid fa-arrows-rotate"></i>Re-match</button>
       </div>
     </div>
     <div class="legend">
@@ -562,8 +674,8 @@ function renderAlignmentInspector(sections, al) {
       <span><span class="m-miss" style="color:var(--err);text-decoration:line-through">word</span> script word not heard</span>
       <span>Hover a beat for <i class="fa-solid fa-arrow-left"></i> <i class="fa-solid fa-plus"></i> buttons to move words across the border.</span>
     </div>`;
-  if (nudgeHistory.length) {
-    html += `<div class="notice"><i class="fa-solid fa-circle-info"></i>Manual changes are kept until you edit the script or transcript.</div>`;
+  if (manualOverrides.size) {
+    html += `<div class="notice"><i class="fa-solid fa-hand-pointer"></i>${plural(manualOverrides.size, 'word')} moved by hand — kept when you edit the script or transcript. "Re-match" removes them.</div>`;
   }
 
   if (filter === 'all') html += unmatchedCard('leading', al.leading || []);
@@ -602,6 +714,7 @@ function updateCompressionTelemetry(finalOutput, al, issues) {
   $('savingsBox').classList.toggle('hidden', !outChars);
   $('copyBtn').disabled = !outChars;
   $('downloadBtn').disabled = !outChars;
+  if (typeof downloadFileName === 'function') $('downloadBtn').title = `Download as "${downloadFileName()}"`;
   $('tokenCountCompare').textContent = `~${Math.round(totalRawChars / 4).toLocaleString()} → ~${Math.round(outChars / 4).toLocaleString()} tokens`;
 
   const healthEl = $('alignmentHealthBadge');

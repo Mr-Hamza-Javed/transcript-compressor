@@ -223,7 +223,7 @@ function collectKeyPaths(objs) {
 }
 
 const WORD_KEY_NAMES = ['punctuated_word', 'word', 'text', 'token', 'token_text', 'value', 'content', 'w', 'label', 'transcript'];
-const START_KEY_NAMES = ['start_time', 'start', 'starttime', 'start_ms', 'startms', 'start_sec', 'start_seconds', 't_in', 'tin', 'ts', 'begin', 'from', 's', 'startoffset', 'start_offset', 'offset', 'start_ts'];
+const START_KEY_NAMES = ['start_time', 'start', 'starttime', 'start_ms', 'startms', 'start_sec', 'start_seconds', 't_in', 'tin', 'ts', 'begin', 'from', 's', 'startoffset', 'start_offset', 'offset', 'start_ts', 'at', 'time', 'timestamp', 'start_s', 't'];
 const END_KEY_NAMES = ['end_time', 'end', 'endtime', 'end_ms', 'endms', 'end_sec', 'end_seconds', 't_out', 'tout', 'end_ts', 'finish', 'to', 'e', 'endoffset', 'end_offset', 'stop'];
 
 function guessObjectMapping(keys, objs) {
@@ -244,8 +244,14 @@ function guessObjectMapping(keys, objs) {
     return keys.find(key => !exclude.includes(key) && rx.test(key.split('.').pop()) && ok(key)) || null;
   };
   const word = pick(WORD_KEY_NAMES, /word|text|tok|content|value/i, isWordy, []);
-  const start = pick(START_KEY_NAMES, /start|begin|^t_?in$/i, isTimey, [word]);
-  const end = pick(END_KEY_NAMES, /end|stop|finish|^t_?out$/i, isTimey, [word, start]);
+  const start = pick(START_KEY_NAMES, /start|begin|^t_?in$|^(at|time|timestamp)$/i, isTimey, [word]);
+  let end = pick(END_KEY_NAMES, /end|stop|finish|^t_?out$/i, isTimey, [word, start]);
+  // No end time, but a duration (Azure: Offset + Duration) -> end = start + duration
+  let endIsDuration = false;
+  if (!end && start) {
+    const dur = keys.find(k => k !== word && k !== start && /^(duration|dur|length|len|duration_ms|duration_sec)$/i.test(k.split('.').pop()) && isTimey(k));
+    if (dur) { end = dur; endIsDuration = true; }
+  }
   const typeKey = keys.find(k => /^(type|kind|element_type)$/i.test(k)) || null;
 
   // A single string variable that packs word + times together, e.g. {"packed": "There | 0.000 - 0.297"}
@@ -256,7 +262,7 @@ function guessObjectMapping(keys, objs) {
       return v.length && v.filter(x => parseCombinedString(x)).length / v.length >= 0.6;
     }) || null;
   }
-  return { word, start, end, typeKey, combinedKey };
+  return { word, start, end, endIsDuration, typeKey, combinedKey };
 }
 
 function guessTupleIndexes(arrays) {
@@ -319,9 +325,11 @@ function analyzeCandidate(path) {
   return res;
 }
 
-function fillSelect(sel, keys, value) {
-  sel.innerHTML = keys.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`).join('');
-  if (value !== null && value !== undefined && keys.includes(value)) sel.value = value;
+// noneLabel adds a first "(none)" option with value "" (e.g. no end-time field)
+function fillSelect(sel, keys, value, noneLabel = null) {
+  sel.innerHTML = (noneLabel ? `<option value="">${escapeHtml(noneLabel)}</option>` : '') +
+    keys.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`).join('');
+  if (value !== null && value !== undefined && (keys.includes(value) || (noneLabel && value === ''))) sel.value = value;
 }
 
 function applyCandidate(cand) {
@@ -359,18 +367,26 @@ function applyCandidate(cand) {
   setTranscriptMode('objects');
   const m = cand.mapping;
   const keys = cand.keys.length ? cand.keys : ['word', 'start_time', 'end_time'];
+  // A missing start/end field stays "(none)" instead of silently picking an unrelated field
   fillSelect($('mapWordKey'), keys, m.word || keys[0]);
-  fillSelect($('mapStartKey'), keys, m.start || keys[1] || keys[0]);
-  fillSelect($('mapEndKey'), keys, m.end || keys[2] || keys[0]);
+  fillSelect($('mapStartKey'), keys, m.start || '', '(none)');
+  fillSelect($('mapEndKey'), keys, m.end || '', '(none — ends at next word)');
+  $('endIsDuration').checked = !!m.endIsDuration;
   $('mapCombinedSourceKey').innerHTML = `<option value="__self__">[Item is String itself]</option>` +
     keys.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`).join('');
   state.typeKey = m.typeKey || null;
 
   const isStandard = ['word', 'text', 'punctuated_word'].includes(m.word) &&
     ['start_time', 'start'].includes(m.start) && ['end_time', 'end'].includes(m.end);
-  if (!m.word || !m.start || !m.end) {
+  if (!m.word || !m.start) {
     pill.textContent = 'Fields need checking';
-    state.mappingMessage = `Could not find ${[!m.word && 'a word', !m.start && 'a start-time', !m.end && 'an end-time'].filter(Boolean).join(', ')} variable automatically in: ${keys.join(', ')}. Please pick it in Transcript settings.`;
+    state.mappingMessage = `Could not find ${[!m.word && 'a word', !m.start && 'a start-time'].filter(Boolean).join(' or ')} field automatically in: ${keys.join(', ')}. Please pick it in Transcript settings.`;
+  } else if (!m.end) {
+    pill.textContent = `Fields: ${m.word}, ${m.start}`;
+    state.mappingMessage = `No end-time field found — each word ends where the next one starts. Pick one in Transcript settings if it exists.`;
+  } else if (m.endIsDuration) {
+    pill.textContent = `Fields: ${m.word}, ${m.start}, ${m.end} (duration)`;
+    state.mappingMessage = `End times are worked out as ${m.start} + ${m.end} (a duration).`;
   } else if (isStandard) {
     pill.textContent = `Fields: ${m.word}, ${m.start}, ${m.end}`;
   } else {
@@ -611,6 +627,7 @@ function extractTranscriptWords() {
     const sKey = $('mapStartKey').value;
     const eKey = $('mapEndKey').value;
     const tKey = state.typeKey;
+    const endIsDuration = !!eKey && $('endIsDuration').checked;
     arr.forEach(item => {
       if (!item || typeof item !== 'object' || Array.isArray(item)) { wrongShape++; return; }
       const w = getByKeyPath(item, wKey);
@@ -622,7 +639,10 @@ function extractTranscriptWords() {
         if (/audio_event|event|sound|noise|music/.test(t)) kind = 'skip';
         else if (/punct/.test(t)) kind = 'punct';
       }
-      items.push({ word: w, startRaw: getByKeyPath(item, sKey), endRaw: getByKeyPath(item, eKey), kind });
+      items.push({
+        word: w, startRaw: sKey ? getByKeyPath(item, sKey) : null, endRaw: eKey ? getByKeyPath(item, eKey) : null, kind,
+        endIsDuration, flagged: item.estimated === true || item.is_estimated === true || item.interpolated === true
+      });
     });
     if (wKey && sKey && wKey === sKey) notes.push({ level: 'warn', title: 'Word and Start time use the same field', detail: 'Check Transcript settings.' });
   } else if (mode === 'combined') {
@@ -694,13 +714,17 @@ function finalizeWords(items, policy, notes) {
       if (words.length) { words[words.length - 1].word += text; attachedPunct++; }
       continue;
     }
+    const s0 = it.startNum !== undefined ? it.startNum : parseTimeToSeconds(it.startRaw);
+    let e0 = it.endNum !== undefined ? it.endNum : parseTimeToSeconds(it.endRaw);
+    if (it.endIsDuration) e0 = (s0 !== null && e0 !== null) ? s0 + e0 : null;
     words.push({
       word: text,
       sRaw: it.startRaw,
-      eRaw: it.endRaw,
-      s: it.startNum !== undefined ? it.startNum : parseTimeToSeconds(it.startRaw),
-      e: it.endNum !== undefined ? it.endNum : parseTimeToSeconds(it.endRaw),
+      eRaw: it.endIsDuration ? undefined : it.endRaw, // a duration is not an end time to print as-is
+      s: s0,
+      e: e0,
       estimated: !!it.estimated,
+      flagged: !!it.flagged, // the transcript itself marked this time as estimated
       inSeconds: it.startNum !== undefined
     });
   }
@@ -740,24 +764,37 @@ function finalizeWords(items, policy, notes) {
       if (w.e !== null) w.e *= factor;
     });
   }
+  // A "Time units" choice that does not fit the numbers
+  if (policy === 'ms_to_sec' || policy === 'sec') {
+    const durs = words.filter(w => convertible(w) && w.s !== null && w.e !== null && w.e > w.s).map(w => w.e - w.s);
+    const med = median(durs);
+    if (med !== null && policy === 'ms_to_sec' && med < 0.01) {
+      notes.push({ level: 'warn', title: 'Time units look wrong — the times seem to be seconds already', detail: `"Time units" is set to Milliseconds, so a typical word now lasts ${(med * 1000).toFixed(2)} ms. Set it to Auto-detect or Seconds in Transcript settings.` });
+    } else if (med !== null && policy === 'sec' && med > 20) {
+      notes.push({ level: 'warn', title: 'Time units look wrong — the times seem to be milliseconds', detail: `"Time units" is set to Seconds, so a typical word lasts ${Math.round(med)} seconds. Set it to Auto-detect or Milliseconds in Transcript settings.` });
+    }
+  }
 
-  // Fill missing timestamps from neighbouring words (instead of a misleading 0.000)
-  let missing = 0, firstMissing = null;
+  // Fill missing timestamps from neighbouring words (instead of a misleading 0.000).
+  // A missing start is estimated (marked ~); a missing end simply runs to the next word's start.
+  let missingStart = 0, firstMissing = null, missingEnd = 0;
   words.forEach(w => {
-    if (w.s === null || w.e === null) {
-      missing++;
+    if (w.s === null) {
+      missingStart++;
       firstMissing = firstMissing || w;
       w.estimated = true;
+    } else if (w.e === null) {
+      missingEnd++;
     }
   });
-  if (missing === words.length && words.length) {
+  if (missingStart === words.length && words.length) {
     notes.push({
       level: 'error',
       title: 'No timestamps could be read',
-      detail: 'Every word is missing its start/end time. Check the Start/End time fields in Transcript settings.'
+      detail: 'Every word is missing its start time. Check the Start/End time fields in Transcript settings.'
     });
-    words.forEach((w, i) => { w.s = 0; w.e = 0; });
-  } else if (missing) {
+    words.forEach(w => { w.s = 0; w.e = 0; });
+  } else {
     for (let i = 0; i < words.length; i++) {
       const w = words[i];
       if (w.s === null) {
@@ -774,22 +811,33 @@ function finalizeWords(items, policy, notes) {
         w.e = Math.max(w.s, next ? next.s : w.s);
       }
     }
-    notes.push({
-      level: 'warn',
-      title: `${missing} word(s) had no timestamp — estimated from neighbouring words`,
-      detail: `First one: "${firstMissing.word}" (now ~${firstMissing.s.toFixed(3)}s). These are marked with ~ in the Beats tab. Speech tools often drop times on numbers or names.`
-    });
+    if (missingStart) {
+      notes.push({
+        level: 'warn',
+        title: `${missingStart} word(s) had no timestamp — estimated from neighbouring words`,
+        detail: `First one: "${firstMissing.word}" (now ~${firstMissing.s.toFixed(3)}s). These are marked with ~ in the Beats tab. Speech tools often drop times on numbers or names.`
+      });
+    }
+    if (missingEnd) {
+      notes.push(missingEnd === words.length
+        ? { level: 'info', title: 'No end times in the transcript — each word ends where the next one starts' }
+        : { level: 'info', title: `${missingEnd} word(s) had no end time — set to the next word's start` });
+    }
   }
 
   // Order / sanity checks
-  let backwards = 0, firstBack = null, negative = 0;
+  let backwards = 0, firstBack = null, negative = 0, belowZero = 0;
   for (let i = 0; i < words.length; i++) {
     const w = words[i];
+    if (w.s < 0 || w.e < 0) { belowZero++; w.s = Math.max(0, w.s); w.e = Math.max(0, w.e); w.estimated = true; }
     if (w.e < w.s) { negative++; w.e = w.s; }
     if (i > 0 && w.s < words[i - 1].s - 0.0005) {
       backwards++;
       firstBack = firstBack || { w, prev: words[i - 1] };
     }
+  }
+  if (belowZero) {
+    notes.push({ level: 'warn', title: `${belowZero} word(s) had a negative time — set to 0`, detail: 'A negative time usually means the transcript was cut or shifted. Beat times near the start may be off.' });
   }
   if (backwards) {
     notes.push({

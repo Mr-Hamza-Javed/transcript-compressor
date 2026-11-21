@@ -156,7 +156,13 @@ function saveInputs() {
     // Storage full (big transcript) or disabled: drop both, so a reload never restores
     // a new script together with an older transcript
     try { localStorage.removeItem(LS_SCRIPT); localStorage.removeItem(LS_TRANSCRIPT); } catch (__) { /* disabled */ }
+    if (!saveInputs.warned) {
+      saveInputs.warned = true;
+      showToast('Inputs are too big for the browser to remember — they will not come back after a reload', 'warn');
+    }
+    return;
   }
+  saveInputs.warned = false;
 }
 
 function showAligningBadge() {
@@ -184,6 +190,11 @@ function scheduleConversion() {
 }
 
 function onInputChanged() {
+  scheduleConversion();
+}
+
+// Typed settings (regex, part numbers) re-match after a short pause instead of on every key
+function onSettingsInput() {
   scheduleConversion();
 }
 
@@ -257,6 +268,7 @@ function setupDragAndDrop() {
 
 // Restores both inputs (used by the "Undo" on clear)
 function restoreInputs(script, transcript) {
+  if (!script || !transcript) clearManualOverrides();
   $('scriptInput').value = script;
   $('transcriptInput').value = transcript;
   saveInputs();

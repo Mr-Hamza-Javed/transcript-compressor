@@ -47,6 +47,7 @@ function fmtSrtTime(sec) {
    SCENARIO LOADER
    ========================================================================= */
 function loadScenario(scenarioKey) {
+  clearManualOverrides();
   $('scriptInput').value = CRUMBL_SCRIPT_SAMPLE;
   let transcript = '';
   let msg = '';

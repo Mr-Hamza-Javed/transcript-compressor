@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Transcript Compressor</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <meta name="theme-color" content="#0b0f14">
   <script>
     // Apply the saved (or system) theme before the first paint
     (function () {
@@ -102,7 +104,7 @@
             </div>
             <div class="field">
               <label for="sectionRegexInput">Section heading pattern (regex)</label>
-              <input id="sectionRegexInput" type="text" value="^#{1,4}\s+(.+)$" class="input mono" oninput="runConversion()" spellcheck="false">
+              <input id="sectionRegexInput" type="text" value="^#{1,4}\s+(.+)$" class="input mono" oninput="onSettingsInput()" spellcheck="false">
             </div>
           </div>
           <div class="fields fields-3">
@@ -204,6 +206,7 @@
             <div class="field">
               <label for="mapEndKey">End time field</label>
               <select id="mapEndKey" class="select mono" onchange="runConversion()"><option value="end_time">end_time</option></select>
+              <label class="check" style="margin-top:6px;font-size:12px" title="Tick this when the field holds how long the word lasts (e.g. Azure Duration), not when it ends"><input id="endIsDuration" type="checkbox" onchange="runConversion()">It's a duration</label>
             </div>
           </div>
 
@@ -215,20 +218,20 @@
               </div>
               <div class="field">
                 <label for="combinedDelimiterInput">Split pattern (auto = smart)</label>
-                <input id="combinedDelimiterInput" type="text" value="auto" class="input mono" oninput="runConversion()" spellcheck="false" title="auto finds the two timestamps; the rest is the word (safe for 1,000th or month-to-month). Or type your own split regex and set the part numbers below.">
+                <input id="combinedDelimiterInput" type="text" value="auto" class="input mono" oninput="onSettingsInput()" spellcheck="false" title="auto finds the two timestamps; the rest is the word (safe for 1,000th or month-to-month). Or type your own split regex and set the part numbers below.">
               </div>
             </div>
             <div class="fields fields-3">
-              <div class="field"><label for="combWordIdx">Word part #</label><input id="combWordIdx" type="number" min="0" value="0" class="input mono" oninput="runConversion()"></div>
-              <div class="field"><label for="combStartIdx">Start part #</label><input id="combStartIdx" type="number" min="0" value="1" class="input mono" oninput="runConversion()"></div>
-              <div class="field"><label for="combEndIdx">End part #</label><input id="combEndIdx" type="number" min="0" value="2" class="input mono" oninput="runConversion()"></div>
+              <div class="field"><label for="combWordIdx">Word part #</label><input id="combWordIdx" type="number" min="0" value="0" class="input mono" oninput="onSettingsInput()"></div>
+              <div class="field"><label for="combStartIdx">Start part #</label><input id="combStartIdx" type="number" min="0" value="1" class="input mono" oninput="onSettingsInput()"></div>
+              <div class="field"><label for="combEndIdx">End part #</label><input id="combEndIdx" type="number" min="0" value="2" class="input mono" oninput="onSettingsInput()"></div>
             </div>
           </div>
 
           <div id="modeTuplesBox" class="fields fields-3 hidden">
-            <div class="field"><label for="tupleWordIdx">Word position</label><input id="tupleWordIdx" type="number" min="0" value="0" class="input mono" oninput="runConversion()"></div>
-            <div class="field"><label for="tupleStartIdx">Start position</label><input id="tupleStartIdx" type="number" min="0" value="1" class="input mono" oninput="runConversion()"></div>
-            <div class="field"><label for="tupleEndIdx">End position</label><input id="tupleEndIdx" type="number" min="0" value="2" class="input mono" oninput="runConversion()"></div>
+            <div class="field"><label for="tupleWordIdx">Word position</label><input id="tupleWordIdx" type="number" min="0" value="0" class="input mono" oninput="onSettingsInput()"></div>
+            <div class="field"><label for="tupleStartIdx">Start position</label><input id="tupleStartIdx" type="number" min="0" value="1" class="input mono" oninput="onSettingsInput()"></div>
+            <div class="field"><label for="tupleEndIdx">End position</label><input id="tupleEndIdx" type="number" min="0" value="2" class="input mono" oninput="onSettingsInput()"></div>
           </div>
 
           <div class="drawer-foot">
