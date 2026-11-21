@@ -26,7 +26,7 @@ const FILLER_WORDS = new Set(['uh', 'um', 'uhm', 'umm', 'erm', 'er', 'ah', 'hmm'
 function normalizeToken(rawStr) {
   if (rawStr === undefined || rawStr === null) return '';
   let s = String(rawStr).normalize('NFKD').replace(/[̀-ًͯ-ٰٟ]/g, '').toLowerCase();
-  s = s.replace(/(\d),(\d)/g, '$1$2');
+  s = s.replace(/(\d),(\d)/g, '$1$2').replace(/[–—]/g, '-');
   if (s === '&') return 'and';
   if (s === '+') return 'plus';
   s = s.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
@@ -94,12 +94,19 @@ function tokenSimilarityScore(normS, normT) {
   return -2.2;
 }
 
-// Expands a beat's script text into tokens ("month-to-month" -> month, to, month; "$2 billion" -> 2 billion (dollars))
-function expandScriptBeatTokens(scriptLine, beatIdx) {
+// A transcript word like "100-million-dollar" or "month-to-month" (joined by - – — or /)
+const isCompoundNorm = (norm) => /[\p{L}\p{N}][-\/]+[\p{L}\p{N}]/u.test(norm);
+
+// Expands a beat's script text into tokens ("month-to-month" -> month, to, month; "$2 billion" -> 2 billion (dollars)).
+// A hyphenated script word stays whole when the transcript also has it as one word ("100-million-dollar"),
+// otherwise its parts could never match that single transcript word.
+function expandScriptBeatTokens(scriptLine, beatIdx, transcriptCompounds) {
   const clean = cleanScriptText(scriptLine);
   if (!clean) return [];
   const subs = [];
   clean.split(/\s+/).filter(Boolean).forEach(rawTok => {
+    const norm = normalizeToken(rawTok);
+    if (transcriptCompounds && isCompoundNorm(norm) && transcriptCompounds.has(norm)) { subs.push(rawTok); return; }
     rawTok.split(/[-–—\/]+/).filter(Boolean).forEach(sub => subs.push(sub));
   });
 
@@ -153,6 +160,8 @@ const overlapRatio = (a, b) => {
 };
 
 function alignWordsToBeats(sections, words) {
+  const transcriptCompounds = new Set();
+  words.forEach(w => { const n = normalizeToken(w.word); if (isCompoundNorm(n)) transcriptCompounds.add(n); });
   const allBeats = [];
   const scriptTokens = [];
   sections.forEach(sec => {
@@ -160,7 +169,7 @@ function alignWordsToBeats(sections, words) {
       beat.beatIndex = allBeats.length;
       beat.sectionTitle = sec.title;
       beat.matchedWords = [];
-      beat.expectedTokens = expandScriptBeatTokens(beat.scriptLine, beat.beatIndex);
+      beat.expectedTokens = expandScriptBeatTokens(beat.scriptLine, beat.beatIndex, transcriptCompounds);
       beat.expectedTokens.forEach(t => { t.globalIdx = scriptTokens.length; scriptTokens.push(t); });
       beat.content = contentSet(beat.expectedTokens.filter(t => !t.isOptionalCurrencyUnit).map(t => t.norm));
       allBeats.push(beat);
